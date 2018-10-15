@@ -326,7 +326,9 @@ Vue.component('taylored-scale', {
 		// Set tonic
 		var tonic = this.getParam('tonic');
 		if(tonic) {
-			this.tonic = parseInt(tonic);
+			tonic = parseInt(tonic);
+			if(tonic < 0) tonic = 0;
+			this.tonic = tonic % 12;
 		}
 
 		// Calculate intervals
