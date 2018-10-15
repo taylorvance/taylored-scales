@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+		<link rel="stylesheet" href="style.css" type="text/css" charset="utf-8">
+		<title>Taylored Scales</title>
+	</head>
+
+	<body>
+		<div id="app">
+			<taylored-scale :x="50" :y="180"/>
+			<svg width="1500" height="200">
+				<guitar :x="50" :y="20"/>
+				<!--<guitar :x="50" :y="180" :height="70" :tuning="['e','a','d','g']" :frets="[0,15]"/>-->
+			</svg>
+		</div>
+	</body>
+
+	<footer>
+		<script src="app.js"></script>
+	</footer>
+</html>

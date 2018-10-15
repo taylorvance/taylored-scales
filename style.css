@@ -1,0 +1,38 @@
+body {
+    font-family: Helvetica Neue, Arial, sans-serif;
+}
+
+.fret line {
+	stroke: #ccc;
+	stroke-width: 3;
+}
+.fret text {
+	dominant-baseline: central;
+	font-size: 0.75em;
+	fill: #aaa;
+	text-anchor: middle;
+}
+.fret circle {
+	fill: #eee;
+}
+
+.string line {
+	stroke: #ccc;
+	stroke-width: 2;
+}
+.string text {
+	dominant-baseline: central;
+	font-size: 0.75em;
+	fill: #aaa;
+	text-anchor: middle;
+}
+
+.note-dot circle {
+	stroke: none;
+}
+.note-dot text {
+	dominant-baseline: central;
+	font-size: 0.75em;
+	fill: #fff;
+	text-anchor: middle;
+}
