@@ -1,5 +1,10 @@
 body {
-    font-family: Helvetica Neue, Arial, sans-serif;
+    font-family: "Trebuchet MS", Helvetica, sans-serif;
+}
+
+svg text {
+	dominant-baseline: central;
+	text-anchor: middle;
 }
 
 .fret line {
@@ -7,10 +12,8 @@ body {
 	stroke-width: 3;
 }
 .fret text {
-	dominant-baseline: central;
 	font-size: 0.75em;
 	fill: #aaa;
-	text-anchor: middle;
 }
 .fret circle {
 	fill: #eee;
@@ -21,18 +24,11 @@ body {
 	stroke-width: 2;
 }
 .string text {
-	dominant-baseline: central;
 	font-size: 0.75em;
 	fill: #aaa;
-	text-anchor: middle;
 }
 
-.note-dot circle {
-	stroke: none;
-}
 .note-dot text {
-	dominant-baseline: central;
 	font-size: 0.75em;
 	fill: #fff;
-	text-anchor: middle;
 }

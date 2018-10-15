@@ -7,15 +7,21 @@
 		<!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
 		<link rel="stylesheet" href="style.css" type="text/css" charset="utf-8">
 		<title>Taylored Scales</title>
+		<script src="scale-names.js"></script>
 	</head>
 
 	<body>
 		<div id="app">
-			<taylored-scale :x="50" :y="180"/>
-			<svg width="1500" height="200">
-				<guitar :x="50" :y="20"/>
-				<!--<guitar :x="50" :y="180" :height="70" :tuning="['e','a','d','g']" :frets="[0,15]"/>-->
-			</svg>
+			<div>
+				<taylored-scale :x="50" :y="180"/>
+			</div>
+			<div>
+				<svg width="1500" height="900">
+					<guitar :x="50" :y="20" :width="1000" :height="100"/>
+					<guitar :x="50" :y="170" :width="450" :height="100" :tuning="['e','a','d','g']" :frets="[7,19]"/>
+					<guitar :x="50" :y="320" :width="1000" :height="70" :tuning="['e','a','d','g']" :frets="[0,15]"/>
+				</svg>
+			</div>
 		</div>
 	</body>
 
