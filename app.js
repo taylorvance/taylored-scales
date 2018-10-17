@@ -143,7 +143,13 @@ Vue.component('guitar', {
 		fretX(fret) { return this.x + fret * this.width / (this.fretAry.length - 1); },
 		stringY(string) { return this.y + this.height - (string - 1) * this.height / (this.tuning.length - 1); },
 		noteX(fret) { return this.fretX(fret) - this.noteOffset; },
-		test() { console.log(this.tuning); },
+		test() {
+			for (var i = 0; i < this.tuning.length; i++) {
+				for (var j = 0; j < this.fretAry.length; j++) {
+					console.log('str'+i+',fret'+this.fretAry[j], this.tuning[i], this.intervals[this.wrappedIntervals[(this.tuning[i] + this.fretAry[j]) % 12]]);
+				}
+			}
+		},
 	},
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
@@ -175,6 +181,138 @@ Vue.component('guitar', {
 				:r="noteRadius"
 				:label="labels[(intervalIdx + j) % 12]"
 				:color="colors[wrappedIntervals[(intervalIdx + j) % 12]]"
+			/>
+		</g>
+
+		<circle v-if="0" v-on:click="test()" cx="0" cy="0" r="20" fill="green" stroke="black" stroke-width="3"/>
+	</svg>`
+});
+
+
+Vue.component('white-key', {
+	props: ['x', 'y', 'width', 'height', 'r', 'label', 'color'],
+	template: `<g>
+		<rect :x="x" :y="y" :width="width" :height="height" fill="white" stroke="black" stroke-width="2"/>
+	</g>`
+});
+Vue.component('black-key', {
+	props: ['x', 'y', 'width', 'height', 'label', 'color'],
+	template: `<rect :x="x" :y="y" :width="width" :height="height" fill="#333" stroke="black" stroke-width="2"/>`
+});
+
+Vue.component('piano', {
+	data: function() {
+		return {
+			strokeWidth: 2,
+		};
+	},
+
+	props: {
+		svgWidth: {type: Number, default: 8000},
+		svgHeight: {type: Number, default: 200},
+		octaves: {type: Number, default: 2},
+		tonic: {type: Number, default: 0},
+		labels: Array,
+		intervals: Array,
+		colors: Array,
+	},
+
+	computed: {
+		width: function() { return this.svgWidth - this.strokeWidth * 2; },
+		height: function() { return this.svgHeight - this.strokeWidth * 2; },
+		whiteWidth: function() { return this.width / this.whiteKeys.length; },
+		blackWidth: function() { return this.whiteWidth * 0.7; },
+		blackHeight: function() { return this.height * 0.6; },
+		whiteKeys: function() {
+			var whites = [];
+			for (var i = 0, len = this.octaves * 12 + 1; i < len; i++) {
+				var interval = i % 12;
+				if([0,2,4,5,7,9,11].includes(interval)) {
+					whites.push(interval);
+				}
+			}
+			return whites;
+		},
+		blackKeys: function() {
+			var blacks = [];
+			for (var i = 0, len = this.octaves * 12 + 1; i < len; i++) {
+				var interval = i % 12;
+				if([1,3,6,8,10].includes(interval)) {
+					blacks.push(interval);
+				}
+			}
+			return blacks;
+		},
+		keyIntervals: function() {
+			var keys = [];
+			for (var i = 0, len = this.octaves * 12 + 1; i < len; i++) {
+				keys.push((i + this.tonic) % 12);
+			}
+			return keys;
+		},
+		wrappedIntervals: function(){
+			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
+			var wrapIdx = 12 - this.tonic;
+			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
+		},
+	},
+
+	methods: {
+		whiteX(i) { return this.strokeWidth + i * this.width / this.whiteKeys.length; },
+		blackX(i) {
+			var octave = Math.floor(i / 5);
+			var placeIn5 = i % 5;
+			var x = octave * this.whiteWidth * 7 + this.strokeWidth;
+			if(placeIn5 == 0) {
+				x += this.whiteWidth * 1 - this.blackWidth / 2 - this.blackWidth * 0.2;
+			} else if(placeIn5 == 1) {
+				x += this.whiteWidth * 2 - this.blackWidth / 2 + this.blackWidth * 0.2;
+			} else if(placeIn5 == 2) {
+				x += this.whiteWidth * 4 - this.blackWidth / 2 - this.blackWidth * 0.3;
+			} else if(placeIn5 == 3) {
+				x += this.whiteWidth * 5 - this.blackWidth / 2;
+			} else if(placeIn5 == 4) {
+				x += this.whiteWidth * 6 - this.blackWidth / 2 + this.blackWidth * 0.3;
+			}
+			return x;
+		},
+		test() { console.log(this.tuning); },
+	},
+
+	template: `<svg :width="svgWidth" :height="svgHeight">
+		<!-- White keys -->
+		<g v-for="(interval, i) in whiteKeys" :key="interval.id">
+			<white-key
+				:x="whiteX(i)"
+				:y="strokeWidth"
+				:width="whiteWidth"
+				:height="height"
+			/>
+			<note-dot
+				v-if="intervals[wrappedIntervals[interval]]"
+				:x="whiteX(i) + whiteWidth/2"
+				:y="3 * height / 4"
+				:r="whiteWidth * 0.3"
+				:label="labels[wrappedIntervals[interval]]"
+				:color="colors[wrappedIntervals[interval]]"
+			/>
+		</g>
+
+		<!-- Black keys -->
+		<g v-for="(interval, i) in blackKeys" :key="interval.id">
+			<black-key
+				:x="blackX(i)"
+				:y="strokeWidth"
+				:width="blackWidth"
+				:height="blackHeight"
+			/>
+			<note-dot
+				v-if="intervals[wrappedIntervals[interval]]"
+				:x="blackX(i) + blackWidth/2"
+				:y="blackHeight * 0.8"
+				:r="blackWidth * 0.4"
+				:label="labels[wrappedIntervals[interval]]"
+				:color="colors[wrappedIntervals[interval]]"
 			/>
 		</g>
 	</svg>`
@@ -346,6 +484,11 @@ Vue.component('taylored-scale', {
 		height: function(){ return this.width / 7; },
 		colors: function(){ return this.colorschemes.rainbow; },
 
+		permLink: function(){
+			var base = window.location.href.split('?')[0];
+			return base + '?tonic=' + this.tonic + '&intervals=' + this.intervals.join('');
+		},
+
 		ianRingNumber: function(){
 			var binary = this.intervals.slice().reverse().join('');
 			return parseInt(binary, 2);
@@ -363,11 +506,23 @@ Vue.component('taylored-scale', {
 			return scaleNums;
 		},
 
-		urlParams: function(){ return new URLSearchParams(window.location.search); }
+		urlParams: function(){ return new URLSearchParams(window.location.search); },
+
+		keyAndScale: function(){
+			var out = this.labels.letters[this.tonic];
+			var names = this.scaleNames[this.ianRingNumber];
+			if(names) {
+				var name = names[0];
+				out += ' ' + this.scaleNames[this.ianRingNumber][0];
+			}
+			return out;
+		},
 	},
 
 	methods: {
-		updateTonic(idx) { this.tonic = idx; },
+		updateTonic(idx) {
+			this.tonic = idx;
+		},
 
 		switchToIanRingScale(num) {
 			var intervals = num.toString(2).split('').reverse().map(n => parseInt(n));
@@ -377,11 +532,29 @@ Vue.component('taylored-scale', {
 			this.intervals = intervals;
 		},
 
-		getParam(name) {
-			return this.urlParams.get(name);
+		getParam(name) { return this.urlParams.get(name); },
+		setParam(name, value) {
+			var params = this.urlParams;
+			params.set('tonic', value);
+			window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 		},
 
-		test() { console.log(this.getParam('tonic')); },
+		test() {
+			console.log('hi');
+		},
+	},
+
+	watch: {
+		ianRingNumber: function(newval, oldval) {
+			var title = 'Taylored Scale';
+			if(this.keyAndScale) {
+				title += ' - ' + this.keyAndScale;
+				title += ' (' + newval + ')';
+			} else {
+				title += ' - ' + newval;
+			}
+			document.title = title;
+		}
 	},
 
 	template: `<div>
@@ -403,6 +576,25 @@ Vue.component('taylored-scale', {
 			<scale-builder :width="height" :labels="labels.degrees" :tonic="tonic" :intervals="intervals" :colors="colors" @toggle-interval="toggleInterval"/>
 			<br><br>
 			<note-wheel :size="height" :tonic="tonic" :intervals="intervals" :labels="labels.letters" :colors="colors" @tonic="updateTonic"/>
+		</div>
+
+		<div style="display:inline-block; margin:1em;">
+			<piano
+				:x="0"
+				:y="0"
+				:svgWidth="width * 0.5"
+				:svgHeight="height"
+				:tonic="tonic"
+				:labels="labels.degrees"
+				:intervals="intervals"
+				:colors="colors"
+			/>
+		</div>
+
+		<!-- Permanent link -->
+		<div style="display:inline-block; margin:1em;">
+			Permanent link to this scale:
+			<a :href="permLink">{{ permLink }}</a>
 		</div>
 
 		<div v-if="false" style="display:inline-block; margin:1em; vertical-align:top;">
