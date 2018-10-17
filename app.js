@@ -457,6 +457,7 @@ Vue.component('taylored-scale', {
 				rainbow: ['#ff0000','#ff8000','#f8f800','#88ff00','#00f800','#00ffc0','#00f8f8','#0080ff','#0000ff','#8000ff','#ff00ff','#ff0080'],
 				//loweredRaised //.3 diff colors: major, lowered, and raised notes (maybe one color for tonic too)
 			},
+			scaleSearch: null,
 		};
 	},
 
@@ -506,17 +507,38 @@ Vue.component('taylored-scale', {
 			return scaleNums;
 		},
 
+		allIanRingScales: function(){
+			var all = [];
+			for (num in scaleNames) {
+				for (i in scaleNames[num]) {
+					all.push({num: num, name: scaleNames[num][i]});
+				}
+			}
+			all.sort(function(a,b){
+				if(a.name < b.name) {
+					return -1;
+				} else {
+					return parseInt(a.name > b.name);
+				}
+			});
+			return all;
+		},
+
+		filteredIanRingScales: function(){
+			var term = this.scaleSearch;
+			if(!term) {
+				return this.allIanRingScales;
+			} else {
+				return this.allIanRingScales.filter(function(scale) {
+					var regex = new RegExp(".*" + term + ".*", "i");
+					return regex.test(scale.name);
+				});
+			}
+		},
+
 		urlParams: function(){ return new URLSearchParams(window.location.search); },
 
-		keyAndScale: function(){
-			var out = this.labels.letters[this.tonic];
-			var names = this.scaleNames[this.ianRingNumber];
-			if(names) {
-				var name = names[0];
-				out += ' ' + this.scaleNames[this.ianRingNumber][0];
-			}
-			return out;
-		},
+		keyAndScale: function(){ return [this.tonic, this.intervals]; },
 	},
 
 	methods: {
@@ -545,16 +567,22 @@ Vue.component('taylored-scale', {
 	},
 
 	watch: {
-		ianRingNumber: function(newval, oldval) {
-			var title = 'Taylored Scale';
-			if(this.keyAndScale) {
-				title += ' - ' + this.keyAndScale;
-				title += ' (' + newval + ')';
-			} else {
-				title += ' - ' + newval;
+		keyAndScale: function(newval, oldval) {
+			// Update document title
+			var title = 'Taylored Scale - ';
+			title += this.labels.letters[this.tonic];
+			var names = this.scaleNames[this.ianRingNumber];
+			if(names) {
+				var name = names[0];
+				title += ' ' + this.scaleNames[this.ianRingNumber][0];
 			}
+			title += ' (' + this.ianRingNumber + ')';
 			document.title = title;
-		}
+
+			// Set cookie
+			document.cookie = "tonic=" + this.tonic;
+			document.cookie = "intervals=" + this.intervals.join('');
+		},
 	},
 
 	template: `<div>
@@ -607,9 +635,10 @@ Vue.component('taylored-scale', {
 		<p>Scale Name(s):&nbsp;&nbsp;<i>{{ scaleNames[ianRingNumber] }}</i></p>
 		<p>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> at Ian Ring's website.</p>
 		<p>
+			<input v-model="scaleSearch" placeholder="Find a scale"/>
 			<div style="border:1px solid black; height:200px; width:350px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
-				<div v-if="scaleNames[num]" v-on:click="switchToIanRingScale(num)" v-for="num in mainScales">
-					{{ scaleNames[num][0] }}
+				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
+					{{ scale.name }} ({{ scale.num }})
 				</div>
 			</div>
 		</p>
