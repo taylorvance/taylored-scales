@@ -647,8 +647,9 @@ Vue.component('taylored-scale', {
 
 		<p>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> at Ian Ring's website.</p>
 
+		<!-- Find a scale -->
 		<div style="display:inline-block">
-			<input v-model="scaleSearch" placeholder="Find a scale"/>
+			<input type="search" v-model="scaleSearch" placeholder="Find a scale"/>
 			<div style="border:1px solid black; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
 					{{ scale.name }}
