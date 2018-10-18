@@ -27,6 +27,11 @@ var scale = {
 			['0'], ['1'], ['2'], ['3'], ['4'], ['5'],
 			['6'], ['7'], ['8'], ['9'], ['10'], ['11']
 		];
+		// blank:
+		notationSystems.blank = [
+			[''], [''], [''], [''], [''], [''],
+			[''], [''], [''], [''], [''], ['']
+		];
 
 		return {
 			notationSystems: notationSystems,
@@ -510,6 +515,7 @@ Vue.component('taylored-scale', {
 		allIanRingScales: function(){
 			var all = [];
 			for (num in scaleNames) {
+				//all.push({num: num, name: scaleNames[num][0], aliases: scaleNames[num].join('; ')}); continue; //.for only the first scale in the list
 				for (i in scaleNames[num]) {
 					all.push({num: num, name: scaleNames[num][i]});
 				}
@@ -547,6 +553,7 @@ Vue.component('taylored-scale', {
 		},
 
 		switchToIanRingScale(num) {
+			num = parseInt(num);
 			var intervals = num.toString(2).split('').reverse().map(n => parseInt(n));
 			for (var i = intervals.length; i < 12; i++) {
 				intervals.push(0);
@@ -586,6 +593,7 @@ Vue.component('taylored-scale', {
 	},
 
 	template: `<div>
+		<!-- Guitar -->
 		<div>
 			<guitar
 				:x="40"
@@ -604,8 +612,13 @@ Vue.component('taylored-scale', {
 			<scale-builder :width="height" :labels="labels.degrees" :tonic="tonic" :intervals="intervals" :colors="colors" @toggle-interval="toggleInterval"/>
 			<br><br>
 			<note-wheel :size="height" :tonic="tonic" :intervals="intervals" :labels="labels.letters" :colors="colors" @tonic="updateTonic"/>
+			<br><br>
+			<div style="font-weight:bold; text-align:center;">
+				{{ labels.letters[tonic] + ' ' + scaleNames[ianRingNumber][0] }}
+			</div>
 		</div>
 
+		<!-- Piano -->
 		<div style="display:inline-block; margin:1em;">
 			<piano
 				:x="0"
@@ -632,16 +645,27 @@ Vue.component('taylored-scale', {
 			</label>
 		</div>
 
-		<p>Scale Name(s):&nbsp;&nbsp;<i>{{ scaleNames[ianRingNumber] }}</i></p>
 		<p>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> at Ian Ring's website.</p>
-		<p>
+
+		<div style="display:inline-block">
 			<input v-model="scaleSearch" placeholder="Find a scale"/>
-			<div style="border:1px solid black; height:200px; width:350px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
+			<div style="border:1px solid black; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
-					{{ scale.name }} ({{ scale.num }})
+					{{ scale.name }}
 				</div>
 			</div>
-		</p>
+		</div>
+
+		<div style="display:inline-block; margin:2em; max-width:50%; vertical-align:top;">
+			Selected Scale Name(s):
+			<br>
+			<div style="padding-left:1em">
+				<span v-for="name in scaleNames[ianRingNumber]">
+					{{ name }}
+					&nbsp; - &nbsp;
+				</span>
+			</div>
+		</div>
 
 		<hr><button v-on:click="test">test</button>
 	</div>`
