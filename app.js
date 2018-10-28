@@ -105,10 +105,10 @@ Vue.component('note-dot', {
 
 Vue.component('guitar', {
 	props: {
-		x: {type: Number, required: true},
-		y: {type: Number, required: true},
-		svgWidth: {type: Number, default: 1000},
-		svgHeight: {type: Number, default: 200},
+		x: {type: Number, required: true},//.make this unnecessary
+		y: {type: Number, required: true},//.make this unnecessary
+		svgWidth: {type: Number, default: 1000},//.remove svg from name
+		svgHeight: {type: Number, default: 200},//.remove svg from name
 		frets: {
 			type: Array,
 			default: function() { return [0,22]; } // 0 to 22
@@ -128,7 +128,7 @@ Vue.component('guitar', {
 		height: function() { return this.svgHeight - 40; },
 		fretAry: function() {
 			var ary = [];
-			for (var fret = this.frets[0]; fret <= this.frets[1]; fret++) {
+			for (var fret = parseInt(this.frets[0]); fret <= parseInt(this.frets[1]); fret++) {
 				ary.push(fret);
 			}
 			return ary;
@@ -179,13 +179,13 @@ Vue.component('guitar', {
 		<g v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id">
 			<note-dot
 				v-for="(fret, j) in fretAry"
-				v-if="intervals[wrappedIntervals[(intervalIdx + j) % 12]]"
+				v-if="intervals[wrappedIntervals[(intervalIdx + fret) % 12]]"
 				:key="fret.id"
 				:x="noteX(j)"
 				:y="stringY(i + 1)"
 				:r="noteRadius"
-				:label="labels[(intervalIdx + j) % 12]"
-				:color="colors[wrappedIntervals[(intervalIdx + j) % 12]]"
+				:label="labels[(intervalIdx + fret) % 12]"
+				:color="colors[wrappedIntervals[(intervalIdx + fret) % 12]]"
 			/>
 		</g>
 
@@ -455,6 +455,8 @@ Vue.component('taylored-scale', {
 	mixins: [scale],
 
 	data: function() {
+		var frets = [0, Math.floor(window.innerWidth / 64)];
+
 		return {
 			scaleNames: scaleNames,//.hack (other file)
 			labelType: 'degrees',
@@ -463,6 +465,8 @@ Vue.component('taylored-scale', {
 				//loweredRaised //.3 diff colors: major, lowered, and raised notes (maybe one color for tonic too)
 			},
 			scaleSearch: null,
+			frets: frets,
+			guitarHeight: Math.floor(window.innerWidth / 7),
 		};
 	},
 
@@ -498,18 +502,6 @@ Vue.component('taylored-scale', {
 		ianRingNumber: function(){
 			var binary = this.intervals.slice().reverse().join('');
 			return parseInt(binary, 2);
-		},
-
-		mainScales: function(){
-			var scaleNums = [273, 585, 661, 859, 1193, 1257, 1365, 1371, 1387, 1389, 1397, 1451, 1453, 1459, 1485, 1493, 1499, 1621, 1643, 1709, 1717, 1725, 1741, 1749, 1753, 1755, 2257, 2275, 2457, 2475, 2477, 2483, 2509, 2535, 2731, 2733, 2741, 2773, 2777, 2869, 2901, 2925, 2925, 2989, 2997, 3055, 3411, 3445, 3549, 3669, 3765, 4095];
-			scaleNums.sort(function(a,b){
-				if(this.scaleNames[a] < this.scaleNames[b]) {
-					return -1;
-				} else {
-					return parseInt(this.scaleNames[a] > this.scaleNames[b]);
-				}
-			});
-			return scaleNums;
 		},
 
 		allIanRingScales: function(){
@@ -595,11 +587,14 @@ Vue.component('taylored-scale', {
 	template: `<div>
 		<!-- Guitar -->
 		<div>
+			Frets: <input type="number" v-model="frets[0]"/> to <input type="number" v-model="frets[1]"/>
+			Height: <input type="number" v-model="guitarHeight"/>
 			<guitar
 				:x="40"
 				:y="25"
 				:svgWidth="width"
-				:svgHeight="height"
+				:svgHeight="guitarHeight"
+				:frets="frets"
 				:tonic="tonic"
 				:labels="labels.letters"
 				:intervals="intervals"
