@@ -575,7 +575,6 @@ Vue.component('taylored-scale', {
 				var name = names[0];
 				title += ' ' + this.scaleNames[this.ianRingNumber][0];
 			}
-			title += ' (' + this.ianRingNumber + ')';
 			document.title = title;
 
 			// Set cookie
