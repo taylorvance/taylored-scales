@@ -598,14 +598,10 @@ Vue.component('taylored-scale', {
 			<scale-builder :width="height" :labels="labels.degrees" :colors="colors"/>
 			<br><br>
 			<note-wheel :size="height" :labels="labels.letters" :colors="colors"/>
-			<br><br>
-			<div style="font-weight:bold; text-align:center;">
-				{{ labels.letters[tonic] + ' ' + scaleNames[ianRingNumber][0] }}
-			</div>
 		</div>
 
 		<!-- Piano -->
-		<div style="display:inline-block; margin:1em;">
+		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<piano
 				:x="0"
 				:y="0"
@@ -616,10 +612,25 @@ Vue.component('taylored-scale', {
 			/>
 		</div>
 
-		<!-- Permanent link -->
-		<div style="display:inline-block; margin:1em;">
-			Permanent link to this scale:
-			<a :href="permLink">{{ permLink }}</a>
+		<br>
+
+		<!-- Scale names and link -->
+		<div style="display:inline-block; max-width:50em; text-align:center;">
+			<h4>{{ labels.letters[tonic] + ' ' + scaleNames[ianRingNumber][0] }}</h4>
+			<p style="font-size:0.8em">
+				Permanent link to this scale:&nbsp;&nbsp;
+				<a :href="permLink">{{ permLink }}</a>
+			</p>
+			<p style="font-size:0.8em">
+				<i>Other names for this scale:</i>
+				&nbsp;&nbsp;
+				<span v-for="(name, i) in scaleNames[ianRingNumber]" style="white-space:nowrap">
+					{{ name }}
+					<span v-if="i != scaleNames[ianRingNumber].length - 1" style="white-space:normal">
+						&nbsp;&mdash;&nbsp;
+					</span>
+				</span>
+			</p>
 		</div>
 
 		<div v-if="false" style="display:inline-block; margin:1em; vertical-align:top;">
@@ -638,17 +649,6 @@ Vue.component('taylored-scale', {
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
 					{{ scale.name }}
 				</div>
-			</div>
-		</div>
-
-		<div style="display:inline-block; margin:2em; max-width:50%; vertical-align:top;">
-			Selected Scale Name(s):
-			<br>
-			<div style="padding-left:1em">
-				<span v-for="name in scaleNames[ianRingNumber]">
-					{{ name }}
-					&nbsp; - &nbsp;
-				</span>
 			</div>
 		</div>
 
