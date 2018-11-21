@@ -24,6 +24,46 @@ const store = new Vuex.Store({
 
 
 
+Vue.component('gear', {
+	props: {
+		cx: {type: Number, required: true},
+		cy: {type: Number, required: true},
+		r: {type: Number, required: true},
+		color: {type: String, default: '#000'},
+	},
+	computed: {
+		toothHeight: function() { return this.r * 0.4; },
+		toothWidth: function() { return 2 * Math.PI * this.toothR / 16; },
+		toothR: function() { return this.r - this.toothHeight / 2; },
+		dasharray: function() { return this.toothWidth + " " + this.toothWidth; },
+	},
+	template: `<g style="cursor:pointer">
+		<!-- hack to handle pointer events -->
+		<circle :cx="cx" :cy="cy" :r="r" fill="white" opacity="0.000001"/>
+		<!-- Teeth -->
+		<circle
+			:cx="cx"
+			:cy="cy"
+			:r="toothR"
+			:stroke="color"
+			:stroke-width="toothHeight"
+			:stroke-dasharray="dasharray"
+			fill="none"
+		/>
+		<!-- Cog -->
+		<circle
+			:cx="cx"
+			:cy="cy"
+			:r="toothR * 0.7"
+			:stroke="color"
+			:stroke-width="toothHeight"
+			fill="none"
+		/>
+	</g>`
+});
+
+
+
 Vue.component('fret', {
 	props: ['x1', 'y1', 'x2', 'y2', 'num'], //.prob just need one x,y and one length var
 	template: `<g class="fret">
@@ -68,9 +108,15 @@ Vue.component('note-dot', {
 
 
 Vue.component('guitar', {
+	data: function() {
+		return {
+			x: 50,
+			y: 25,
+			showControls: false,
+		};
+	},
+
 	props: {
-		x: {type: Number, required: true},//.make this unnecessary
-		y: {type: Number, required: true},//.make this unnecessary
 		svgWidth: {type: Number, default: 1000},//.remove svg from name
 		svgHeight: {type: Number, default: 200},//.remove svg from name
 		frets: {
@@ -88,8 +134,8 @@ Vue.component('guitar', {
 	computed: {
 		tonic: function() { return store.state.tonic; },
 		intervals: function() { return store.state.intervals; },
-		width: function() { return this.svgWidth - 80; },
-		height: function() { return this.svgHeight - 40; },
+		width: function() { return this.svgWidth - (this.x * 2); },
+		height: function() { return this.svgHeight - (this.y * 2); },
 		fretAry: function() {
 			var ary = [];
 			for (var fret = parseInt(this.frets[0]); fret <= parseInt(this.frets[1]); fret++) {
@@ -121,40 +167,52 @@ Vue.component('guitar', {
 		},
 	},
 
-	template: `<svg :width="svgWidth" :height="svgHeight">
-		<!-- Fret markers -->
-		<rect
-			v-for="(fret, i) in fretAry"
-			v-if="i > 0 && [3,5,7,9,12,15,17,19,21,23,25,27].includes(fret)"
-			:x="fretX(i) - 2*fretDistance/3"
-			:y="stringY(tuning.length) + stringDistance/2"
-			:width="fretDistance/3"
-			:height="stringDistance * (tuning.length-2)"
-			fill="#eee"
-		/>
+	template: `<div>
+		<!-- Config -->
+		<div v-show="showControls">
+			Frets: <input type="number" v-model="frets[0]" style="width:5em"/> to <input type="number" v-model="frets[1]" style="width:5em"/>
+			Height: <input type="number" v-model="svgHeight" style="width:5em"/>
+		</div>
 
-		<!-- Frets -->
-		<fret v-for="(fret, i) in fretAry" :key="fret.id" :x1="fretX(i)" :y1="y" :x2="fretX(i)" :y2="y + height" :num="fret"/>
+		<svg :width="svgWidth" :height="svgHeight">
+			<g v-on:click="showControls = !showControls">
+				<gear :cx="10" :cy="10" :r="10" color="#777"/>
+			</g>
 
-		<!-- Strings -->
-		<string v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id" :x1="x" :y1="stringY(i + 1)" :x2="x + width" :y2="stringY(i + 1)"/>
-
-		<!-- Notes -->
-		<g v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id">
-			<note-dot
-				v-for="(fret, j) in fretAry"
-				v-if="intervals[wrappedIntervals[(intervalIdx + fret) % 12]]"
-				:key="fret.id"
-				:x="noteX(j)"
-				:y="stringY(i + 1)"
-				:r="noteRadius"
-				:label="labels[(intervalIdx + fret) % 12]"
-				:color="colors[wrappedIntervals[(intervalIdx + fret) % 12]]"
+			<!-- Fret markers -->
+			<rect
+				v-for="(fret, i) in fretAry"
+				v-if="i > 0 && [3,5,7,9,12,15,17,19,21,23,25,27].includes(fret)"
+				:x="fretX(i) - 2*fretDistance/3"
+				:y="stringY(tuning.length) + stringDistance/2"
+				:width="fretDistance/3"
+				:height="stringDistance * (tuning.length-2)"
+				fill="#eee"
 			/>
-		</g>
 
-		<circle v-if="0" v-on:click="test()" cx="0" cy="0" r="20" fill="green" stroke="black" stroke-width="3"/>
-	</svg>`
+			<!-- Frets -->
+			<fret v-for="(fret, i) in fretAry" :key="fret.id" :x1="fretX(i)" :y1="y" :x2="fretX(i)" :y2="y + height" :num="fret"/>
+
+			<!-- Strings -->
+			<string v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id" :x1="x" :y1="stringY(i + 1)" :x2="x + width" :y2="stringY(i + 1)"/>
+
+			<!-- Notes -->
+			<g v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id">
+				<note-dot
+					v-for="(fret, j) in fretAry"
+					v-if="intervals[wrappedIntervals[(intervalIdx + fret) % 12]]"
+					:key="fret.id"
+					:x="noteX(j)"
+					:y="stringY(i + 1)"
+					:r="noteRadius"
+					:label="labels[(intervalIdx + fret) % 12]"
+					:color="colors[wrappedIntervals[(intervalIdx + fret) % 12]]"
+				/>
+			</g>
+
+			<circle v-if="0" v-on:click="test()" cx="0" cy="0" r="20" fill="green" stroke="black" stroke-width="3"/>
+		</svg>
+	</div>`
 });
 
 
@@ -581,11 +639,7 @@ Vue.component('taylored-scale', {
 	template: `<div>
 		<!-- Guitar -->
 		<div>
-			Frets: <input type="number" v-model="frets[0]"/> to <input type="number" v-model="frets[1]"/>
-			Height: <input type="number" v-model="guitarHeight"/>
 			<guitar
-				:x="40"
-				:y="25"
 				:svgWidth="width"
 				:svgHeight="guitarHeight"
 				:frets="frets"
