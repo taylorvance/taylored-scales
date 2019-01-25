@@ -10,11 +10,11 @@ const store = new Vuex.Store({
 			if(idx < 0) idx = 0;
 			state.tonic = idx % state.intervals.length;
 		},
-		setIntervals(state, intervals) {
-			for (var i = 0, len = 12-intervals.length; i < len; i++) {
-				intervals.push(0);
+		setIntervals(state, newIntervals) {
+			for (var i = 0, len = state.intervals.length-newIntervals.length; i < len; i++) {
+				newIntervals.push(0);
 			}
-			state.intervals = intervals;
+			state.intervals = newIntervals;
 		},
 		toggleInterval(state, idx) {
 			state.intervals.splice(idx, 1, (state.intervals[idx] ? 0 : 1));
@@ -549,6 +549,101 @@ Vue.component('mode-switcher', {
 });
 
 
+Vue.component('chords', {
+	props: {
+		labels: Array,
+	},
+
+	computed: {
+		tonic: function(){ return store.state.tonic; },
+		intervals: function() { return store.state.intervals; },
+
+		wrappedIntervals: function(){//.normalize this dup code (THIS ONE IS SLIGHTLY DIFFERENT FROM THE OTHERS)
+			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
+			var wrapIdx = this.tonic - 12;
+			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
+		},
+
+		chordGroups: function() {
+			var grps = {"Triads":{}, "Sevenths":{}};
+
+			// triads
+			var combos = {
+				"": [0,4,7],
+				"m": [0,3,7],
+				"+": [0,4,8],
+				"º": [0,3,6],
+				//"sus": [0,5,7],
+				//"sus2": [0,2,7],
+			};
+			// loop through every note, starting with the tonic
+			for (var i = this.tonic, len = this.tonic + this.intervals.length; i < len; i++) {
+				var rootIdx = i % this.intervals.length;
+				if(!this.intervals[rootIdx]) continue;
+				// loop through each type of chord
+				for (suffix in combos) {
+					var isAvailable = true;
+					// check for each sub-interval to be active
+					for (j in combos[suffix]) {
+						var intervalIdxToCheck = (combos[suffix][j] + rootIdx) % this.intervals.length;
+						if(!this.intervals[intervalIdxToCheck]) {
+							isAvailable = false;
+							break;
+						}
+					}
+					if(isAvailable) {
+						if(grps["Triads"][rootIdx] == undefined) grps["Triads"][rootIdx] = [];
+						grps["Triads"][rootIdx].push(this.labels[this.wrappedIntervals[rootIdx]] + suffix);
+					}
+				}
+			}
+
+			// sevenths
+			var combos = {
+				"7": [0,4,7,10],
+				"M7": [0,4,7,11],
+				"m7": [0,3,7,10],
+				"mM7": [0,3,7,11],
+				"ø7": [0,3,6,10],
+				"º7": [0,3,6,9],
+			};
+			// loop through every note, starting with the tonic
+			for (var i = this.tonic, len = this.tonic + this.intervals.length; i < len; i++) {
+				var rootIdx = i % this.intervals.length;
+				if(!this.intervals[rootIdx]) continue;
+				// loop through each type of chord
+				for (suffix in combos) {
+					var isAvailable = true;
+					// check for each sub-interval to be active
+					for (j in combos[suffix]) {
+						var intervalIdxToCheck = (combos[suffix][j] + rootIdx) % this.intervals.length;
+						if(!this.intervals[intervalIdxToCheck]) {
+							isAvailable = false;
+							break;
+						}
+					}
+					if(isAvailable) {
+						if(grps["Sevenths"][rootIdx] == undefined) grps["Sevenths"][rootIdx] = [];
+						grps["Sevenths"][rootIdx].push(this.labels[this.wrappedIntervals[rootIdx]] + suffix);
+					}
+				}
+			}
+
+			return grps;
+		},
+	},
+
+	template: `<div>
+		<div v-for="(sets, type) in chordGroups" style="display:inline-block; margin-left:1em; vertical-align:top;">
+			<h4>{{ type }}</h4>
+			<div v-for="(chords, rootIdx) in chordGroups[type]">
+				<span v-for="chord in chords" style="margin-right:1.5em">{{ chord }}</span>
+			</div>
+		</div>
+	</div>`
+});
+
+
 Vue.component('taylored-scale', {
 	data: function() {
 		var notationSystems = {};
@@ -561,6 +656,11 @@ Vue.component('taylored-scale', {
 		notationSystems.degrees = [
 			['R','1'], ['b2','#1'], ['2'], ['b3','#2'], ['3'], ['4'],
 			['T','#4','b5'], ['5'], ['b6','#5'], ['6'], ['b7','#6'], ['7']
+		];
+		// roman numerals: I bII II bIII III IV #IV V bVI VI bVII VII
+		notationSystems.roman = [
+			['I'], ['bII','#I'], ['II'], ['bIII','#II'], ['III'], ['IV'],
+			['#IV','bV'], ['V'], ['bVI','#V'], ['VI'], ['bVII','#VI'], ['VII']
 		];
 		// intervals: P1 m2 M2 m3 M3 P4 TT P5 m6 M6 m7 M7
 		notationSystems.intervals = [
@@ -749,7 +849,7 @@ Vue.component('taylored-scale', {
 			<mode-switcher></mode-switcher>
 		</div>
 
-		<div style="display:inline-block; margin:1em; max-width:42em; text-align:center;">
+		<div style="display:inline-block; margin:1em; max-width:35em; text-align:center;">
 			<h4>{{ labels.letters[tonic] + ' ' + scaleNames[ianRingNumber][0] }}</h4>
 			<p style="font-size:0.8em">
 				Permanent link to this scale:&nbsp;&nbsp;
@@ -770,6 +870,11 @@ Vue.component('taylored-scale', {
 				<a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a>
 				at Ian Ring's website.
 			</p>
+		</div>
+
+		<div style="display:inline-block; margin:1em; vertical-align:top;">
+			<h4>Available Chords</h4>
+			<chords :labels="labels.letters"></chords>
 		</div>
 
 		<div v-if="false" style="display:inline-block; margin:1em; vertical-align:top;">
