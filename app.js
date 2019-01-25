@@ -8,7 +8,7 @@ const store = new Vuex.Store({
 		setTonic(state, idx) {
 			idx = parseInt(idx);
 			if(idx < 0) idx = 0;
-			state.tonic = idx;
+			state.tonic = idx % state.intervals.length;
 		},
 		setIntervals(state, intervals) {
 			for (var i = 0, len = 12-intervals.length; i < len; i++) {
@@ -147,7 +147,7 @@ Vue.component('guitar', {
 		stringDistance: function() { return this.height / (this.tuning.length - 1); },
 		noteOffset: function() { return this.fretDistance / 4; },
 		noteRadius: function() { return Math.min(this.fretDistance, this.stringDistance) / 3; },
-		wrappedIntervals: function(){
+		wrappedIntervals: function(){//.normalize this dup code
 			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
 			var wrapIdx = 12 - this.tonic;
 			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
@@ -277,7 +277,7 @@ Vue.component('piano', {
 			}
 			return keys;
 		},
-		wrappedIntervals: function(){
+		wrappedIntervals: function(){//.normalize this dup code
 			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
 			var wrapIdx = 12 - this.tonic;
 			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
@@ -426,7 +426,7 @@ Vue.component('note-wheel', {
 		cx: function(){ return this.width / 2; },
 		cy: function(){ return this.height / 2; },
 		r: function(){ return Math.min(this.width, this.height) / 2 - this.buttonRadius - (this.strokeWidth/2); },
-		wrappedIntervals: function(){
+		wrappedIntervals: function(){//.normalize this dup code
 			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
 			var wrapIdx = 12 - this.tonic;
 			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
@@ -470,6 +470,82 @@ Vue.component('note-wheel', {
 			/>
 		</g>
 	</svg>`
+});
+
+
+Vue.component('mode-switcher', {
+	computed: {
+		tonic: function(){ return store.state.tonic; },
+		intervals: function() { return store.state.intervals; },
+
+		modes: function() {
+			var modes = [];
+			for (var i = 0, len = this.intervals.length; i < len; i++) {
+				if(this.intervals[i]) {
+					var mode = this.intervals.slice(i).concat(this.intervals.slice(0, i))
+					modes.push(mode);
+				}
+			}
+			// Remove duplicates
+			var set = new Set(modes.map(JSON.stringify));
+			modes = Array.from(set).map(JSON.parse);
+			return modes;
+		},
+
+		ianRings: function() {
+			var numbers = [];
+			for (var i = 0, len = this.modes.length; i < len; i++) {
+				var binary = this.modes[i].slice().reverse().join('');
+				numbers.push(parseInt(binary, 2));
+			}
+			return numbers;
+		},
+
+		modeNames: function() {
+			var names = [];
+			for (var i = 0, len = this.modes.length; i < len; i++) {
+				var name = 'Scale #' + this.ianRings[i];
+				var ary = scaleNames[this.ianRings[i]];
+				if(ary != undefined) {
+					name = ary[0];
+				}
+				names.push(name);
+			}
+			return names;
+		},
+	},
+
+	methods: {
+		goToParallel(idx) {
+			store.commit('setIntervals', this.modes[idx]);
+		},
+		goToRelative(idx) {
+			var n = 0;
+			for (var i = 0, len = this.intervals.length; i < len; i++) {
+				if(this.intervals[i]) {
+					if(++n > idx) {
+						store.commit('setTonic', this.tonic + i);
+						break;
+					}
+				}
+			}
+
+			store.commit('setIntervals', this.modes[idx]);
+		},
+	},
+
+	template: `<div>
+		<table>
+			<tr v-for="(mode, i) in modes" style="font-size:0.8em">
+				<td>
+					Go to
+					<button v-on:click="goToParallel(i)" style="cursor:pointer">Parallel</button>
+					<button v-on:click="goToRelative(i)" style="cursor:pointer">Relative</button>
+				</td>
+				<td>{{ modeNames[i] }}</td>
+			</tr>
+		</table>
+	</div>`
 });
 
 
@@ -565,10 +641,9 @@ Vue.component('taylored-scale', {
 
 		allIanRingScales: function(){
 			var all = [];
-			for (num in scaleNames) {
-				//all.push({num: num, name: scaleNames[num][0], aliases: scaleNames[num].join('; ')}); continue; //.for only the first scale in the list
-				for (i in scaleNames[num]) {
-					all.push({num: num, name: scaleNames[num][i]});
+			for (num in this.scaleNames) {
+				for (i in this.scaleNames[num]) {
+					all.push({num: num, name: this.scaleNames[num][i]});
 				}
 			}
 			all.sort(function(a,b){
@@ -667,9 +742,9 @@ Vue.component('taylored-scale', {
 			/>
 		</div>
 
-		<br>
+		<h4>Mode Switcher</h4>
+		<mode-switcher></mode-switcher>
 
-		<!-- Scale names and link -->
 		<div style="display:inline-block; max-width:50em; text-align:center;">
 			<h4>{{ labels.letters[tonic] + ' ' + scaleNames[ianRingNumber][0] }}</h4>
 			<p style="font-size:0.8em">
