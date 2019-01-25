@@ -24,46 +24,6 @@ const store = new Vuex.Store({
 
 
 
-Vue.component('gear', {
-	props: {
-		cx: {type: Number, required: true},
-		cy: {type: Number, required: true},
-		r: {type: Number, required: true},
-		color: {type: String, default: '#000'},
-	},
-	computed: {
-		toothHeight: function() { return this.r * 0.4; },
-		toothWidth: function() { return 2 * Math.PI * this.toothR / 16; },
-		toothR: function() { return this.r - this.toothHeight / 2; },
-		dasharray: function() { return this.toothWidth + " " + this.toothWidth; },
-	},
-	template: `<g style="cursor:pointer">
-		<!-- hack to handle pointer events -->
-		<circle :cx="cx" :cy="cy" :r="r" fill="white" opacity="0.000001"/>
-		<!-- Teeth -->
-		<circle
-			:cx="cx"
-			:cy="cy"
-			:r="toothR"
-			:stroke="color"
-			:stroke-width="toothHeight"
-			:stroke-dasharray="dasharray"
-			fill="none"
-		/>
-		<!-- Cog -->
-		<circle
-			:cx="cx"
-			:cy="cy"
-			:r="toothR * 0.7"
-			:stroke="color"
-			:stroke-width="toothHeight"
-			fill="none"
-		/>
-	</g>`
-});
-
-
-
 Vue.component('fret', {
 	props: ['x1', 'y1', 'x2', 'y2', 'num'], //.prob just need one x,y and one length var
 	template: `<g class="fret">
@@ -112,7 +72,6 @@ Vue.component('guitar', {
 		return {
 			x: 50,
 			y: 25,
-			showControls: false,
 		};
 	},
 
@@ -168,17 +127,7 @@ Vue.component('guitar', {
 	},
 
 	template: `<div>
-		<!-- Config -->
-		<div v-show="showControls">
-			Frets: <input type="number" v-model="frets[0]" style="width:5em"/> to <input type="number" v-model="frets[1]" style="width:5em"/>
-			Height: <input type="number" v-model="svgHeight" style="width:5em"/>
-		</div>
-
 		<svg :width="svgWidth" :height="svgHeight">
-			<g v-on:click="showControls = !showControls">
-				<gear :cx="10" :cy="10" :r="10" color="#777"/>
-			</g>
-
 			<!-- Fret markers -->
 			<rect
 				v-for="(fret, i) in fretAry"
@@ -695,7 +644,9 @@ Vue.component('taylored-scale', {
 			},
 			scaleSearch: null,
 			frets: frets,
+			guitarWidth: window.innerWidth,
 			guitarHeight: Math.floor(window.innerWidth / 7),
+			showGuitarCtrls: false,
 		};
 	},
 
@@ -814,8 +765,19 @@ Vue.component('taylored-scale', {
 	template: `<div>
 		<!-- Guitar -->
 		<div>
+			<!-- config -->
+			<div style="border:1px solid #777; display:inline-block; padding:0.25em;">
+				<button v-on:click="showGuitarCtrls = !showGuitarCtrls">Fretboard Options</button>
+				<div v-show="showGuitarCtrls" style="padding:0.5em">
+					Frets: <input type="number" v-model="frets[0]" style="width:5em"/> to <input type="number" v-model="frets[1]" style="width:4em"/>
+					<br>
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="guitarWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
+					<br>
+					Height: <button v-for="px in [-50,-20,-5,5,20,50]" v-on:click="guitarHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+				</div>
+			</div>
 			<guitar
-				:svgWidth="width"
+				:svgWidth="guitarWidth"
 				:svgHeight="guitarHeight"
 				:frets="frets"
 				:labels="labels.letters"
@@ -846,7 +808,7 @@ Vue.component('taylored-scale', {
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Mode Switcher</h4>
-			<mode-switcher></mode-switcher>
+			<mode-switcher/>
 		</div>
 
 		<div style="display:inline-block; margin:1em; max-width:35em; text-align:center;">
@@ -874,7 +836,7 @@ Vue.component('taylored-scale', {
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Available Chords</h4>
-			<chords :labels="labels.letters"></chords>
+			<chords :labels="labels.letters"/>
 		</div>
 
 		<div v-if="false" style="display:inline-block; margin:1em; vertical-align:top;">
