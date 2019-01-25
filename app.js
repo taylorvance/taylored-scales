@@ -742,10 +742,14 @@ Vue.component('taylored-scale', {
 			/>
 		</div>
 
-		<h4>Mode Switcher</h4>
-		<mode-switcher></mode-switcher>
+		<br>
 
-		<div style="display:inline-block; max-width:50em; text-align:center;">
+		<div style="display:inline-block; margin:1em; vertical-align:top;">
+			<h4>Mode Switcher</h4>
+			<mode-switcher></mode-switcher>
+		</div>
+
+		<div style="display:inline-block; margin:1em; max-width:42em; text-align:center;">
 			<h4>{{ labels.letters[tonic] + ' ' + scaleNames[ianRingNumber][0] }}</h4>
 			<p style="font-size:0.8em">
 				Permanent link to this scale:&nbsp;&nbsp;
@@ -761,6 +765,11 @@ Vue.component('taylored-scale', {
 					</span>
 				</span>
 			</p>
+			<p style="font-size:0.8em; font-style:italic;">
+				Learn more about
+				<a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a>
+				at Ian Ring's website.
+			</p>
 		</div>
 
 		<div v-if="false" style="display:inline-block; margin:1em; vertical-align:top;">
@@ -770,11 +779,10 @@ Vue.component('taylored-scale', {
 			</label>
 		</div>
 
-		<p>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> at Ian Ring's website.</p>
-
 		<!-- Find a scale -->
 		<div style="display:inline-block">
-			<input type="search" v-model="scaleSearch" placeholder="Find a scale"/>
+			<h4>Scale Finder</h4>
+			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
 			<div style="border:1px solid black; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
 					{{ scale.name }}
@@ -782,7 +790,7 @@ Vue.component('taylored-scale', {
 			</div>
 		</div>
 
-		<hr><button v-on:click="test">test</button>
+		<div style="display:none"><hr><button v-on:click="test">test</button></div>
 	</div>`
 });
 
