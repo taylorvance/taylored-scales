@@ -644,9 +644,11 @@ Vue.component('taylored-scale', {
 			},
 			scaleSearch: null,
 			frets: frets,
+			showCfg: {guitar:false, piano:false},
 			guitarWidth: window.innerWidth,
-			guitarHeight: Math.floor(window.innerWidth / 7),
-			showGuitarCtrls: false,
+			guitarHeight: 200,
+			pianoWidth: Math.max(400, window.innerWidth * 0.5),
+			pianoHeight: 170,
 		};
 	},
 
@@ -668,7 +670,7 @@ Vue.component('taylored-scale', {
 		tonic: function(){ return store.state.tonic; },
 		intervals: function() { return store.state.intervals; },
 		width: function(){ return window.innerWidth; },
-		height: function(){ return this.width / 7; },
+		height: function(){ return 200; },
 		colors: function(){ return this.colorschemes.rainbow; },
 
 		labels: function() {
@@ -766,16 +768,17 @@ Vue.component('taylored-scale', {
 		<!-- Guitar -->
 		<div>
 			<!-- config -->
-			<div style="border:1px solid #777; display:inline-block; padding:0.25em;">
-				<button v-on:click="showGuitarCtrls = !showGuitarCtrls">Fretboard Options</button>
-				<div v-show="showGuitarCtrls" style="padding:0.5em">
+			<div class="cfg-box">
+				<button v-on:click="showCfg.guitar = !showCfg.guitar">Fretboard Config</button>
+				<div v-show="showCfg.guitar" style="padding:0.5em">
 					Frets: <input type="number" v-model="frets[0]" style="width:5em"/> to <input type="number" v-model="frets[1]" style="width:4em"/>
 					<br>
 					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="guitarWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
-					Height: <button v-for="px in [-50,-20,-5,5,20,50]" v-on:click="guitarHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="guitarHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
 				</div>
 			</div>
+			<br>
 			<guitar
 				:svgWidth="guitarWidth"
 				:svgHeight="guitarHeight"
@@ -794,11 +797,21 @@ Vue.component('taylored-scale', {
 
 		<!-- Piano -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
+			<!-- config -->
+			<div class="cfg-box">
+				<button v-on:click="showCfg.piano = !showCfg.piano">Keyboard Config</button>
+				<div v-show="showCfg.piano" style="padding:0.5em">
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="pianoWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
+					<br>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="pianoHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+				</div>
+			</div>
+			<br>
 			<piano
 				:x="0"
 				:y="0"
-				:svgWidth="width * 0.5"
-				:svgHeight="height"
+				:svgWidth="pianoWidth"
+				:svgHeight="pianoHeight"
 				:labels="labels.degrees"
 				:colors="colors"
 			/>
@@ -850,7 +863,7 @@ Vue.component('taylored-scale', {
 		<div style="display:inline-block">
 			<h4>Scale Finder</h4>
 			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
-			<div style="border:1px solid black; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
+			<div style="border:1px solid black; font-size:0.75em; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
 					{{ scale.name }}
 				</div>

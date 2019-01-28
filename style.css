@@ -7,6 +7,13 @@ svg text {
 	text-anchor: middle;
 }
 
+.cfg-box {
+	border: 1px solid #777;
+	display: inline-block;
+	padding: 0.25em;
+	margin: 0.25em;
+}
+
 .fret line {
 	stroke: #ccc;
 	stroke-width: 3;
