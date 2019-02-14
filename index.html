@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<!-- Global site tag (gtag.js) - Google Analytics -->
+		<!--
 		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-128786180-1"></script>
 		<script>
 			window.dataLayer = window.dataLayer || [];
@@ -9,6 +10,7 @@
 			gtag('js', new Date());
 			gtag('config', 'UA-128786180-1');
 		</script>
+		-->
 
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,17 +26,11 @@
 	</head>
 
 	<body>
+		<div style="background:#ffa; border:1px solid red; color:#333; display:inline-block; padding:0.25em; margin-bottom:0.5em;">
+			Work in progress. Features may change.
+		</div><br>
 		<div id="app">
-			<div>
-				<taylored-scale :x="50" :y="180"/>
-			</div>
-			<div style="display:none">
-				<svg width="1500" height="900">
-					<guitar :x="50" :y="20" :width="1000" :height="100"/>
-					<guitar :x="50" :y="170" :width="450" :height="100" :tuning="['e','a','d','g']" :frets="[7,19]"/>
-					<guitar :x="50" :y="320" :width="1000" :height="70" :tuning="['e','a','d','g']" :frets="[0,15]"/>
-				</svg>
-			</div>
+			<taylored-scale :x="50" :y="180"/>
 		</div>
 	</body>
 
