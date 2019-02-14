@@ -231,16 +231,6 @@ Vue.component('guitar', {
 });
 
 
-Vue.component('white-key', {
-	props: ['x', 'y', 'width', 'height', 'r', 'label', 'color'],
-	template: `<g>
-		<rect :x="x" :y="y" :width="width" :height="height" fill="white" stroke="black" stroke-width="2"/>
-	</g>`
-});
-Vue.component('black-key', {
-	props: ['x', 'y', 'width', 'height', 'label', 'color'],
-	template: `<rect :x="x" :y="y" :width="width" :height="height" fill="#333" stroke="black" stroke-width="2"/>`
-});
 
 Vue.component('piano', {
 	data: function() {
@@ -324,36 +314,26 @@ Vue.component('piano', {
 	template: `<svg :width="svgWidth" :height="svgHeight">
 		<!-- White keys -->
 		<g v-for="(interval, i) in whiteKeys" :key="interval.id">
-			<white-key
-				:x="whiteX(i)"
-				:y="strokeWidth"
-				:width="whiteWidth"
-				:height="height"
-			/>
+			<rect :x="whiteX(i)" :y="strokeWidth" :width="whiteWidth" :height="height" fill="white" stroke="black" :stroke-width="strokeWidth"/>
 			<note-dot
 				v-if="intervals[wrappedIntervals[interval]]"
 				:x="whiteX(i) + whiteWidth/2"
 				:y="3 * height / 4"
 				:r="whiteWidth * 0.3"
-				:label="labels[wrappedIntervals[interval]]"
+				:label="labels[interval]"
 				:color="colors[wrappedIntervals[interval]]"
 			/>
 		</g>
 
 		<!-- Black keys -->
 		<g v-for="(interval, i) in blackKeys" :key="interval.id">
-			<black-key
-				:x="blackX(i)"
-				:y="strokeWidth"
-				:width="blackWidth"
-				:height="blackHeight"
-			/>
+			<rect :x="blackX(i)" :y="strokeWidth" :width="blackWidth" :height="blackHeight" fill="#333" stroke="black" :stroke-width="strokeWidth"/>
 			<note-dot
 				v-if="intervals[wrappedIntervals[interval]]"
 				:x="blackX(i) + blackWidth/2"
 				:y="blackHeight * 0.8"
 				:r="blackWidth * 0.4"
-				:label="labels[wrappedIntervals[interval]]"
+				:label="labels[interval]"
 				:color="colors[wrappedIntervals[interval]]"
 			/>
 		</g>
@@ -906,7 +886,7 @@ Vue.component('taylored-scale', {
 				:y="0"
 				:svgWidth="pianoWidth"
 				:svgHeight="pianoHeight"
-				:labels="labels.degrees"
+				:labels="noteNames"
 				:colors="colors"
 			/>
 		</div>
