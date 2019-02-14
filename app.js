@@ -695,9 +695,26 @@ Vue.component('taylored-scale', {
 			notationSystems: notationSystems,
 			scaleNames: scaleNames,//.hack (other file)
 			colorschemes: {
-				rainbow: ['#ff0000','#ff8000','#f8f800','#88ff00','#00f800','#00ffc0','#00f8f8','#0080ff','#0000ff','#8000ff','#ff00ff','#ff0080'],
+				pureRainbow: [
+					'hsl(0,100%,50%)', 'hsl(30,100%,50%)', 'hsl(60,100%,50%)', 'hsl(90,100%,50%)', 'hsl(120,100%,50%)', 'hsl(150,100%,50%)',
+					'hsl(180,100%,50%)', 'hsl(210,100%,50%)', 'hsl(240,100%,50%)', 'hsl(270,100%,50%)', 'hsl(300,100%,50%)', 'hsl(330,100%,50%)'
+				],
+				pureRainbowDesat: ['#ee0000','#ee7700','#eeee00','#77ee00','#00ee00','#00ee77','#00eeee','#0077ee','#0000ee','#7700ee','#ee00ee','#ee0077'],
+				rainbowMod: [
+					'hsl(0,100%,50%)', 'hsl(30,100%,50%)', 'hsl(55,100%,50%)', 'hsl(72,100%,50%)', 'hsl(100,100%,50%)', 'hsl(165,100%,50%)',
+					'hsl(185,100%,50%)', 'hsl(205,100%,50%)', 'hsl(240,100%,50%)', 'hsl(270,100%,50%)', 'hsl(300,100%,50%)', 'hsl(320,100%,50%)'
+				],
+				roygbiv: [
+					'#ff0000', '#ff6000', '#ff8000', '#ffc000', '#fff000', '#00ff80',
+					'#00ffff', '#0000ff', '#000', '#8000ff', '#000', '#ff00ff'
+				],
+				customRainbow: [
+					'hsl(0,100%,50%)', 'hsl(25,100%,50%)', 'hsl(45,100%,50%)', 'hsl(60,90%,50%)', 'hsl(80,100%,50%)', 'hsl(120,100%,50%)',
+					'hsl(180,100%,50%)', 'hsl(210,100%,50%)', 'hsl(240,100%,50%)', 'hsl(270,100%,50%)', 'hsl(300,100%,50%)', 'hsl(330,100%,50%)'
+				],
 				//loweredRaised //.3 diff colors: major, lowered, and raised notes (maybe one color for tonic too)
 			},
+			colorschemeIdx: 'customRainbow',
 			scaleSearch: null,
 			frets: frets,
 			showCfg: {guitar:false, piano:false},
@@ -730,7 +747,7 @@ Vue.component('taylored-scale', {
 		intervals: function() { return store.getters.booleanIntervals; },
 		tonic: function(){ return store.getters.tonic; },
 
-		colors: function(){ return this.colorschemes.rainbow; },
+		colors: function(){ return this.colorschemes[this.colorschemeIdx]; },
 
 		labels: function() {
 			//.later: allow selection and save state of preferred enharmonics
@@ -892,6 +909,10 @@ Vue.component('taylored-scale', {
 		</div>
 
 		<br>
+
+		<div v-if="0" v-for="(colors, key) in colorschemes" v-on:click="colorschemeIdx = key">
+			{{ key }}
+		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Mode Switcher</h4>
