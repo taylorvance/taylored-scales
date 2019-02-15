@@ -485,58 +485,69 @@ Vue.component('mode-switcher', {
 		intervals: function() { return store.getters.booleanIntervals; },
 
 		modes: function() {
+			// Create array of modal interval sets
 			var modes = [];
 			for (var i = 0, len = this.intervals.length; i < len; i++) {
 				if(this.intervals[i]) {
-					var mode = this.intervals.slice(i).concat(this.intervals.slice(0, i))
-					modes.push(mode);
+					modes.push(this.intervals.slice(i).concat(this.intervals.slice(0,i)));
 				}
 			}
 			// Remove duplicates
 			var set = new Set(modes.map(JSON.stringify));
 			modes = Array.from(set).map(JSON.parse);
-			return modes;
-		},
-
-		ianRings: function() {
-			var numbers = [];
-			for (var i = 0, len = this.modes.length; i < len; i++) {
-				var binary = this.modes[i].slice().reverse().join('');
-				numbers.push(parseInt(binary, 2));
+			// Find Ian Ring numbers and names
+			for (var i = 0, len = modes.length; i < len; i++) {
+				var modeIntervals = modes[i];
+				var num = this.ianRingNumber(modeIntervals);
+				modes[i] = {
+					intervals: modeIntervals,
+					number: num,
+					name: this.scaleName(num),
+				};
 			}
-			return numbers;
-		},
-
-		modeNames: function() {
-			var names = [];
-			for (var i = 0, len = this.modes.length; i < len; i++) {
-				var name = 'Scale #' + this.ianRings[i];
-				var ary = scaleNames[this.ianRings[i]];
-				if(ary != undefined) {
-					name = ary[0];
+			// Sort by IR number
+			modes = modes.sort(function(a,b){
+				if(a.number < b.number) {
+					return -1;
+				} else {
+					return (a.number > b.number) ? 1 : 0;
 				}
-				names.push(name);
-			}
-			return names;
+			});
+			modes.reverse(); // (prime form last)
+			return modes;
 		},
 	},
 
 	methods: {
+		ianRingNumber: function(intervals) {
+			var binary = intervals.slice().reverse().join('');
+			return parseInt(binary, 2);
+		},
+
+		scaleName: function(ianRingNum) {
+			var names = scaleNames[ianRingNum];
+			if(names === undefined) {
+				return 'Scale #' + ianRingNum;
+			} else {
+				return names[0];
+			}
+		},
+
 		goToParallel(idx) {
-			store.commit('setIntervals', this.modes[idx]);
+			store.commit('setIntervals', this.modes[idx]['intervals']);
 		},
 		goToRelative(idx) {
-			var n = 0;
+			var relativeIntervals = this.modes[idx].intervals.join('');
 			for (var i = 0, len = this.intervals.length; i < len; i++) {
 				if(this.intervals[i]) {
-					if(++n > idx) {
+					var thisSlice = this.intervals.slice(i).concat(this.intervals.slice(0,i));
+					if(relativeIntervals === thisSlice.join('')) {
 						store.commit('setTonic', this.tonic + i);
+						store.commit('setIntervals', thisSlice);
 						break;
 					}
 				}
 			}
-
-			store.commit('setIntervals', this.modes[idx]);
 		},
 	},
 
@@ -548,7 +559,7 @@ Vue.component('mode-switcher', {
 					<button v-on:click="goToParallel(i)" style="cursor:pointer">Parallel</button>
 					<button v-on:click="goToRelative(i)" style="cursor:pointer">Relative</button>
 				</td>
-				<td>{{ modeNames[i] }}</td>
+				<td>{{ mode.name }}</td>
 			</tr>
 		</table>
 	</div>`
@@ -837,7 +848,7 @@ Vue.component('taylored-scale', {
 	watch: {
 		keyAndScale: function(newval, oldval) {
 			// Update document title
-			var title = 'Taylored Scale - ';
+			var title = 'Taylored Scales - ';
 			title += this.tonic;
 			var names = this.scaleNames[this.ianRingNumber];
 			if(names) {
