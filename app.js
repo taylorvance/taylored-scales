@@ -726,6 +726,7 @@ Vue.component('taylored-scale', {
 				],
 				monochrome: ['#f00', '#e00', '#d00', '#c00', '#b00', '#a00', '#900', '#800', '#700', '#600', '#500', '#400'],
 				noir: ['#000', '#111', '#222', '#333', '#444', '#555', '#666', '#777', '#888', '#999', '#aaa', '#bbb'],
+				black: ['#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000'],
 			},
 			colorschemeIdx: 'rainbowHandpicked',
 			scaleSearch: null,
@@ -875,7 +876,7 @@ Vue.component('taylored-scale', {
 					<div
 						v-for="(colors, key) in colorschemes"
 						v-on:click="colorschemeIdx = key"
-						:style="'margin-bottom:3px; border:'+(colorschemeIdx==key ? '3px solid black' : '')+';'"
+						:style="'margin-bottom:3px; border:'+(colorschemeIdx==key ? '3px solid #555' : '')+';'"
 					>
 						<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
 					</div>
