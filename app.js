@@ -706,29 +706,31 @@ Vue.component('taylored-scale', {
 			notationSystems: notationSystems,
 			scaleNames: scaleNames,//.hack (other file)
 			colorschemes: {
-				pureRainbow: [
+				/*
+				rainbowPure: [
 					'hsl(0,100%,50%)', 'hsl(30,100%,50%)', 'hsl(60,100%,50%)', 'hsl(90,100%,50%)', 'hsl(120,100%,50%)', 'hsl(150,100%,50%)',
 					'hsl(180,100%,50%)', 'hsl(210,100%,50%)', 'hsl(240,100%,50%)', 'hsl(270,100%,50%)', 'hsl(300,100%,50%)', 'hsl(330,100%,50%)'
 				],
-				pureRainbowDesat: ['#ee0000','#ee7700','#eeee00','#77ee00','#00ee00','#00ee77','#00eeee','#0077ee','#0000ee','#7700ee','#ee00ee','#ee0077'],
-				rainbowMod: [
-					'hsl(0,100%,50%)', 'hsl(30,100%,50%)', 'hsl(55,100%,50%)', 'hsl(72,100%,50%)', 'hsl(100,100%,50%)', 'hsl(165,100%,50%)',
-					'hsl(185,100%,50%)', 'hsl(205,100%,50%)', 'hsl(240,100%,50%)', 'hsl(270,100%,50%)', 'hsl(300,100%,50%)', 'hsl(320,100%,50%)'
+				rainbowDesat: [
+					'hsl(0,90%,50%)', 'hsl(30,90%,50%)', 'hsl(60,90%,50%)', 'hsl(90,90%,50%)', 'hsl(120,90%,50%)', 'hsl(150,90%,50%)',
+					'hsl(180,90%,50%)', 'hsl(210,90%,50%)', 'hsl(240,90%,50%)', 'hsl(270,90%,50%)', 'hsl(300,90%,50%)', 'hsl(330,90%,50%)'
 				],
-				roygbiv: [
-					'#ff0000', '#ff6000', '#ff8000', '#ffc000', '#fff000', '#00ff80',
-					'#00ffff', '#0000ff', '#000', '#8000ff', '#000', '#ff00ff'
-				],
-				customRainbow: [
+				*/
+				rainbowHandpicked: [
 					'hsl(0,100%,50%)', 'hsl(25,100%,50%)', 'hsl(45,100%,50%)', 'hsl(60,92%,50%)', 'hsl(77,100%,50%)', 'hsl(125,100%,50%)',
 					'hsl(180,100%,50%)', 'hsl(205,100%,50%)', 'hsl(240,100%,50%)', 'hsl(270,100%,50%)', 'hsl(292,100%,50%)', 'hsl(320,100%,50%)'
 				],
-				//loweredRaised //.3 diff colors: major, lowered, and raised notes (maybe one color for tonic too)
+				complimentary: [
+					'#ff0000', '#ff6600', '#ff9904', '#ffcc02', '#f6f600', '#66cc02',
+					'#049901', '#0db4c2', '#0151d4', '#660099', '#990099', '#cc0099'
+				],
+				monochrome: ['#f00', '#e00', '#d00', '#c00', '#b00', '#a00', '#900', '#800', '#700', '#600', '#500', '#400'],
+				noir: ['#000', '#111', '#222', '#333', '#444', '#555', '#666', '#777', '#888', '#999', '#aaa', '#bbb'],
 			},
-			colorschemeIdx: 'customRainbow',
+			colorschemeIdx: 'rainbowHandpicked',
 			scaleSearch: null,
 			frets: frets,
-			showCfg: {guitar:false, piano:false},
+			showCfg: {global:false, guitar:false, piano:false},
 			guitarWidth: window.innerWidth,
 			guitarHeight: 200,
 			pianoWidth: Math.max(400, window.innerWidth * 0.5),
@@ -865,9 +867,24 @@ Vue.component('taylored-scale', {
 	},
 
 	template: `<div>
+		<div class="cfg-box">
+			<button v-on:click="showCfg.global = !showCfg.global">Global Config</button>
+			<div v-show="showCfg.global" style="padding:0.5em">
+				Colorscheme:
+				<div style="padding-left:1em">
+					<div
+						v-for="(colors, key) in colorschemes"
+						v-on:click="colorschemeIdx = key"
+						:style="'margin-bottom:3px; border:'+(colorschemeIdx==key ? '3px solid black' : '')+';'"
+					>
+						<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<!-- Guitar -->
 		<div v-if="intervals">
-			<!-- config -->
 			<div class="cfg-box">
 				<button v-on:click="showCfg.guitar = !showCfg.guitar">Fretboard Config</button>
 				<div v-show="showCfg.guitar" style="padding:0.5em">
@@ -899,7 +916,6 @@ Vue.component('taylored-scale', {
 
 		<!-- Piano -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<!-- config -->
 			<div class="cfg-box">
 				<button v-on:click="showCfg.piano = !showCfg.piano">Keyboard Config</button>
 				<div v-show="showCfg.piano" style="padding:0.5em">
@@ -920,10 +936,6 @@ Vue.component('taylored-scale', {
 		</div>
 
 		<br>
-
-		<div v-if="0" v-for="(colors, key) in colorschemes" v-on:click="colorschemeIdx = key">
-			{{ key }}
-		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Mode Switcher</h4>
