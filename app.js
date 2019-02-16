@@ -751,6 +751,11 @@ Vue.component('taylored-scale', {
 		if(intervals) {
 			store.commit('setIntervals', intervals.split('').map(function(x){ return parseInt(x); }));
 		}
+
+		// Respect the cookie
+		var cs = this.getCookie('colorschemeIdx');
+		if(cs === null) this.colorschemeIdx = 'rainbowHandpicked';
+		else this.colorschemeIdx = cs;
 	},
 
 	computed: {
@@ -827,6 +832,12 @@ Vue.component('taylored-scale', {
 		urlParams: function(){ return new URLSearchParams(window.location.search); },
 
 		keyAndScale: function(){ return [this.tonic, this.intervals]; },
+
+		cookies: function(){
+			return {
+				colorscheme: this.colorschemeIdx,
+			};
+		},
 	},
 
 	methods: {
@@ -843,8 +854,25 @@ Vue.component('taylored-scale', {
 			window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 		},
 
+		getCookie(cname) {
+			var name = cname + "=";
+			var decodedCookie = decodeURIComponent(document.cookie);
+			var ca = decodedCookie.split(';');
+			for(var i = 0; i <ca.length; i++) {
+				var c = ca[i];
+				while (c.charAt(0) == ' ') {
+					c = c.substring(1);
+				}
+				if (c.indexOf(name) == 0) {
+					return c.substring(name.length, c.length);
+				}
+			}
+			return null;
+		},
+		setCookie(cname, cvalue) { document.cookie = cname + "=" + cvalue; },
+
 		test() {
-			console.log('hi');
+			console.log('cookie', document.cookie);
 		},
 	},
 
@@ -865,9 +893,17 @@ Vue.component('taylored-scale', {
 			//document.cookie = "tonic=" + this.tonicIdx;
 			//document.cookie = "intervals=" + this.intervals.join('');
 		},
+
+		cookies: function(newval, oldval) {
+			for(key in newval) {
+				document.cookie = key+"="+newval[key];
+			}
+		}
 	},
 
 	template: `<div>
+		<div v-if="1"><hr><button v-on:click="test">test</button></div>
+
 		<div class="cfg-box">
 			<button v-on:click="showCfg.global = !showCfg.global">Global Config</button>
 			<div v-show="showCfg.global" style="padding:0.5em">
@@ -981,8 +1017,6 @@ Vue.component('taylored-scale', {
 				</div>
 			</div>
 		</div>
-
-		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 	</div>`
 });
 
