@@ -32,6 +32,7 @@ const store = new Vuex.Store({
 			if(idx < 0) idx = 0;
 			state.tonicIdx = idx % state.intervalSet.length;
 		},
+
 		setIntervals(state, newIntervals) {
 			// Fill any missing intervals with 0
 			for (var i = 0, len = state.intervalSet.length - newIntervals.length; i < len; i++) {
@@ -45,6 +46,7 @@ const store = new Vuex.Store({
 		toggleInterval(state, idx) {
 			state.intervalSet[idx].on = !state.intervalSet[idx].on;
 		},
+
 		enharmonicizeInterval(state, idx) {
 			state.intervalSet[idx].enharmonics.push(state.intervalSet[idx].enharmonics.shift());
 		},
@@ -68,9 +70,7 @@ const store = new Vuex.Store({
 			var tonicLetterIdx = allLetters.indexOf(tonicLetter);
 
 			state.intervalSet.forEach(function(interval, i) {
-				var intervalName = interval.enharmonics[0];
-				var quality = intervalName[0];
-				var number = parseInt(intervalName[1]);
+				var number = parseInt(interval.enharmonics[0][1]);
 				var semitones = i;
 
 				var targetLetter = allLetters[tonicLetterIdx + number - 1];
@@ -84,8 +84,32 @@ const store = new Vuex.Store({
 
 			var wrapIdx = state.pitchClasses.length - state.tonicIdx;
 			return names.slice(wrapIdx).concat(names.slice(0, wrapIdx));
+		},
 
-			return names;
+		romanNumerals: function(state) {
+			var numerals = [];
+
+			var intervalMap = {
+				P1:'I',
+				m2:'bII', A1:'#I',
+				M2:'II', d3:'bbIII',
+				m3:'bIII', A2:'#II',
+				M3:'III', d4:'bIV',
+				P4:'IV', A3:'#III',
+				A4:'#IV', d5:'bV',
+				P5:'V', d6:'bbVI',
+				m6:'bVI', A5:'#V',
+				M6:'VI', d7:'bVII',
+				m7:'bVII', A6:'#VI',
+				M7:'VII', d8:'bVIII',
+			};
+
+			state.intervalSet.forEach(function(interval, i) {
+				numerals.push(intervalMap[interval.enharmonics[0]]);
+			});
+
+			var wrapIdx = state.pitchClasses.length - state.tonicIdx;
+			return numerals.slice(wrapIdx).concat(numerals.slice(0, wrapIdx));
 		},
 	},
 });
@@ -663,47 +687,9 @@ Vue.component('chords', {
 
 Vue.component('taylored-scale', {
 	data: function() {
-		var notationSystems = {};
-		// letters: C Db D Eb E F F# G Ab A Bb B
-		notationSystems.letters = [
-			['C','B#','Dbb'], ['Db','Bx','C#'], ['D','Cx','Ebb'], ['Eb','D#','Fbb'], ['E','Dx','Fb'], ['F','E#','Gbb'],
-			['F#','Ex','Gb'], ['G','Fx','Abb'], ['Ab','G#'], ['A','Gx','Bbb'], ['Bb','A#','Cbb'], ['B','Ax','Cb']
-		];
-		// degrees: 1 b2 2 b3 3 4 #4 5 b6 6 b7 7
-		notationSystems.degrees = [
-			['R','1'], ['b2','#1'], ['2'], ['b3','#2'], ['3'], ['4'],
-			['T','#4','b5'], ['5'], ['b6','#5'], ['6'], ['b7','#6'], ['7']
-		];
-		// roman numerals: I bII II bIII III IV #IV V bVI VI bVII VII
-		notationSystems.roman = [
-			['I'], ['bII','#I'], ['II'], ['bIII','#II'], ['III'], ['IV'],
-			['#IV','bV'], ['V'], ['bVI','#V'], ['VI'], ['bVII','#VI'], ['VII']
-		];
-		// intervals: P1 m2 M2 m3 M3 P4 A4 P5 m6 M6 m7 M7
-		notationSystems.intervals = [
-			['P1','d2'], ['m2','A1'], ['M2','d3'], ['m3','A2'], ['M3','d4'], ['P4','A3'],
-			['A4','d5'], ['P5','d6'], ['m6','A5'], ['M6','d7'], ['m7','A6'], ['M7','d8']
-		];
-		// solfege: do di re ri mi fa fi so si la li ti
-		notationSystems.solfege = [
-			['do'], ['di','ra'], ['re'], ['ri','me'], ['mi'], ['fa'],
-			['fi','se'], ['so','sol'], ['si','le'], ['la'], ['li','te'], ['ti']
-		];
-		// semitones: 0 1 2 3 4 5 6 7 8 9 10 11
-		notationSystems.semitones = [
-			['0'], ['1'], ['2'], ['3'], ['4'], ['5'],
-			['6'], ['7'], ['8'], ['9'], ['10'], ['11']
-		];
-		// blank:
-		notationSystems.blank = [
-			[''], [''], [''], [''], [''], [''],
-			[''], [''], [''], [''], [''], ['']
-		];
-
 		var frets = [0, Math.floor(window.innerWidth / 64)];
 
 		return {
-			notationSystems: notationSystems,
 			scaleNames: scaleNames,//.hack (other file)
 			colorschemes: {
 				/*
@@ -724,8 +710,13 @@ Vue.component('taylored-scale', {
 					'#ff0000', '#ff6600', '#ff9904', '#ffcc02', '#f6f600', '#66cc02',
 					'#049901', '#0db4c2', '#0151d4', '#660099', '#990099', '#cc0099'
 				],
-				monochrome: ['#f00', '#e00', '#d00', '#c00', '#b00', '#a00', '#900', '#800', '#700', '#600', '#500', '#400'],
-				noir: ['#000', '#111', '#222', '#333', '#444', '#555', '#666', '#777', '#888', '#999', '#aaa', '#bbb'],
+				darkAccident: [
+					'hsl(0,100%,50%)', 'hsl(15,100%,40%)', 'hsl(30,100%,50%)', 'hsl(45,100%,40%)', 'hsl(60,92%,50%)', 'hsl(90,100%,45%)',
+					'hsl(170,100%,25%)', 'hsl(210,100%,60%)', 'hsl(220,100%,35%)', 'hsl(250,100%,65%)', 'hsl(270,100%,35%)', 'hsl(290,100%,60%)'
+				],
+				//monochrome: ['#f00', '#e00', '#d00', '#c00', '#b00', '#a00', '#900', '#800', '#700', '#600', '#500', '#400'],
+				//noir: ['#000', '#111', '#222', '#333', '#444', '#555', '#666', '#777', '#888', '#999', '#aaa', '#bbb'],
+				//whiteBlackKeys: ['#aaa', '#555', '#aaa', '#555', '#aaa', '#aaa', '#555', '#aaa', '#555', '#aaa', '#555', '#aaa'],
 				black: ['#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000'],
 			},
 			colorschemeIdx: 'rainbowHandpicked',
@@ -763,16 +754,8 @@ Vue.component('taylored-scale', {
 
 		colors: function(){ return this.colorschemes[this.colorschemeIdx]; },
 
-		labels: function() {
-			//.later: allow selection and save state of preferred enharmonics
-			var labels = {};
-			for (var system in this.notationSystems) {
-				labels[system] = this.notationSystems[system].map(function(enharmonics){ return enharmonics[0]; });
-			}
-			return labels;
-		},
-
 		noteNames: function() { return store.getters.noteNames; },
+		romanNumerals: function() { return store.getters.romanNumerals; },
 
 		permLink: function(){
 			var url = window.location.href.split('?')[0];
@@ -860,14 +843,12 @@ Vue.component('taylored-scale', {
 			}
 			title += ' (' + this.ianRingNumber + ')';
 			document.title = title;
-
-			// Set cookie
-			//document.cookie = "tonic=" + this.tonicIdx;
-			//document.cookie = "intervals=" + this.intervals.join('');
 		},
 	},
 
 	template: `<div>
+		<div v-if="0"><hr><button v-on:click="test">test</button></div>
+
 		<div class="cfg-box">
 			<button v-on:click="showCfg.global = !showCfg.global">Global Config</button>
 			<div v-show="showCfg.global" style="padding:0.5em">
@@ -968,6 +949,7 @@ Vue.component('taylored-scale', {
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Available Chords</h4>
+			<!--chords :labels="romanNumerals"/-->
 			<chords :labels="noteNames"/>
 		</div>
 
@@ -981,8 +963,6 @@ Vue.component('taylored-scale', {
 				</div>
 			</div>
 		</div>
-
-		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 	</div>`
 });
 
