@@ -219,36 +219,36 @@ Vue.component('guitar', {
 	},
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
-		<!-- Fret markers -->
-		<rect
-			v-for="(fret, i) in fretAry"
-			v-if="i > 0 && [3,5,7,9,12,15,17,19,21,23,25,27].includes(fret)"
-			:x="fretX(i) - 2*fretDistance/3"
-			:y="stringY(tuning.length) + stringDistance/2"
-			:width="fretDistance/3"
-			:height="stringDistance * (tuning.length-2)"
-			fill="#eee"
-		/>
-
-		<!-- Frets -->
-		<fret v-for="(fret, i) in fretAry" :key="fret.id" :x1="fretX(i)" :y1="y" :x2="fretX(i)" :y2="y + height" :num="fret"/>
-
-		<!-- Strings -->
-		<string v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id" :x1="x" :y1="stringY(i + 1)" :x2="x + width" :y2="stringY(i + 1)"/>
-
-		<!-- Notes -->
-		<g v-for="(tuningIdx, i) in tuning" :key="tuningIdx.id">
-			<note-dot
-				v-for="(fret, j) in fretAry"
-				v-if="intervals[wrappedIdxs[(tuningIdx + fret) % 12]]"
-				:key="fret.id"
-				:x="noteX(j)"
-				:y="stringY(i + 1)"
-				:r="noteRadius"
-				:label="labels[(tuningIdx + fret) % 12]"
-				:color="colors[wrappedIdxs[(tuningIdx + fret) % 12]]"
+			<!-- Fret markers -->
+			<rect
+				v-for="(fret, i) in fretAry"
+				v-if="i > 0 && [3,5,7,9,12,15,17,19,21,23,25,27].includes(fret)"
+				:x="fretX(i) - 2*fretDistance/3"
+				:y="stringY(tuning.length) + stringDistance/2"
+				:width="fretDistance/3"
+				:height="stringDistance * (tuning.length-2)"
+				fill="#eee"
 			/>
-		</g>
+
+			<!-- Frets -->
+			<fret v-for="(fret, i) in fretAry" :key="fret.id" :x1="fretX(i)" :y1="y" :x2="fretX(i)" :y2="y + height" :num="fret"/>
+
+			<!-- Strings -->
+			<string v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id" :x1="x" :y1="stringY(i + 1)" :x2="x + width" :y2="stringY(i + 1)"/>
+
+			<!-- Notes -->
+			<g v-for="(tuningIdx, i) in tuning" :key="tuningIdx.id">
+				<note-dot
+					v-for="(fret, j) in fretAry"
+					v-if="intervals[wrappedIdxs[(tuningIdx + fret) % 12]]"
+					:key="fret.id"
+					:x="noteX(j)"
+					:y="stringY(i + 1)"
+					:r="noteRadius"
+					:label="labels[(tuningIdx + fret) % 12]"
+					:color="colors[wrappedIdxs[(tuningIdx + fret) % 12]]"
+				/>
+			</g>
 
 		<circle v-if="0" v-on:click="test()" cx="0" cy="0" r="20" fill="green" stroke="black" stroke-width="3"/>
 	</svg>`
@@ -269,6 +269,7 @@ Vue.component('piano', {
 		octaves: {type: Number, default: 2},
 		labels: Array,
 		colors: Array,
+		colorWholeKey: {type: Boolean, default: false},
 	},
 
 	computed: {
@@ -332,13 +333,27 @@ Vue.component('piano', {
 			}
 			return x;
 		},
+		color(i) {
+			if(this.intervals[this.wrappedIntervals[i]])
+				return this.colors[this.wrappedIntervals[i]];
+			else
+				return false;
+		},
 		test() { console.log(this.tuning); },
 	},
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
 		<!-- White keys -->
 		<g v-for="(interval, i) in whiteKeys" :key="interval.id">
-			<rect :x="whiteX(i)" :y="strokeWidth" :width="whiteWidth" :height="height" fill="white" stroke="black" :stroke-width="strokeWidth"/>
+			<rect
+				:x="whiteX(i)"
+				:y="strokeWidth"
+				:width="whiteWidth"
+				:height="height"
+				:fill="colorWholeKey ? (color(interval) || 'white') : 'white'"
+				stroke="black"
+				:stroke-width="strokeWidth"
+			/>
 			<note-dot
 				v-if="intervals[wrappedIntervals[interval]]"
 				:x="whiteX(i) + whiteWidth/2"
@@ -351,7 +366,15 @@ Vue.component('piano', {
 
 		<!-- Black keys -->
 		<g v-for="(interval, i) in blackKeys" :key="interval.id">
-			<rect :x="blackX(i)" :y="strokeWidth" :width="blackWidth" :height="blackHeight" fill="#333" stroke="black" :stroke-width="strokeWidth"/>
+			<rect
+				:x="blackX(i)"
+				:y="strokeWidth"
+				:width="blackWidth"
+				:height="blackHeight"
+				:fill="colorWholeKey ? (color(interval) || '#333') : '#333'"
+				stroke="black"
+				:stroke-width="strokeWidth"
+			/>
 			<note-dot
 				v-if="intervals[wrappedIntervals[interval]]"
 				:x="blackX(i) + blackWidth/2"
@@ -727,6 +750,7 @@ Vue.component('taylored-scale', {
 			guitarHeight: 200,
 			pianoWidth: Math.max(400, window.innerWidth * 0.5),
 			pianoHeight: 170,
+			pianoColorWholeKey: true,
 		};
 	},
 
@@ -870,7 +894,7 @@ Vue.component('taylored-scale', {
 			<div class="cfg-box">
 				<button v-on:click="showCfg.guitar = !showCfg.guitar">Fretboard Config</button>
 				<div v-show="showCfg.guitar" style="padding:0.5em">
-					Frets: <input type="number" v-model="frets[0]" style="width:5em"/> to <input type="number" v-model="frets[1]" style="width:4em"/>
+					Frets: <input type="number" v-model="frets[0]" style="width:4em"/> to <input type="number" v-model="frets[1]" style="width:4em"/>
 					<br>
 					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="guitarWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
@@ -904,6 +928,11 @@ Vue.component('taylored-scale', {
 					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="pianoWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
 					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="pianoHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+					<br>
+					<label>
+						<input type="checkbox" v-model="pianoColorWholeKey"/>
+						Color whole key
+					</label>
 				</div>
 			</div>
 			<br>
@@ -914,6 +943,7 @@ Vue.component('taylored-scale', {
 				:svgHeight="pianoHeight"
 				:labels="noteNames"
 				:colors="colors"
+				:colorWholeKey="pianoColorWholeKey"
 			/>
 		</div>
 
