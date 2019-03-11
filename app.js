@@ -780,6 +780,10 @@ Vue.component('taylored-scale', {
 					octaves: 2,
 					colorWholeKey: true,
 				},
+				chords: {
+					showCfg: false,
+					useRoman: false,
+				},
 			},
 		};
 	},
@@ -1010,8 +1014,14 @@ Vue.component('taylored-scale', {
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Available Chords</h4>
-			<!--chords :labels="romanNumerals"/-->
-			<chords :labels="noteNames"/>
+			<div class="cfg-box">
+				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chords Config</button>
+				<div v-show="cfg.chords.showCfg" style="padding:0.5em">
+					<label><input type="checkbox" v-model="cfg.chords.useRoman"/> Use Roman Numerals</label>
+				</div>
+			</div>
+			<br>
+			<chords :labels="cfg.chords.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
 		</div>
 
 		<!-- Find a scale -->
