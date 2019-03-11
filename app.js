@@ -761,15 +761,26 @@ Vue.component('taylored-scale', {
 				//whiteBlackKeys: ['#aaa', '#555', '#aaa', '#555', '#aaa', '#aaa', '#555', '#aaa', '#555', '#aaa', '#555', '#aaa'],
 				black: ['#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000'],
 			},
-			colorschemeIdx: 'rainbowHandpicked',
 			scaleSearch: null,
-			frets: frets,
-			showCfg: {global:false, guitar:false, piano:false},
-			guitarWidth: window.innerWidth,
-			guitarHeight: 200,
-			pianoWidth: Math.max(400, window.innerWidth * 0.5),
-			pianoHeight: 170,
-			pianoColorWholeKey: true,
+			cfg: {
+				global: {
+					showCfg: false,
+					colorscheme: 'rainbowHandpicked',
+				},
+				guitar: {
+					showCfg: false,
+					width: window.innerWidth,
+					height: 200,
+					frets: frets,
+				},
+				piano: {
+					showCfg: false,
+					width: Math.max(400, window.innerWidth * 0.5),
+					height: 170,
+					octaves: 2,
+					colorWholeKey: true,
+				},
+			},
 		};
 	},
 
@@ -795,7 +806,7 @@ Vue.component('taylored-scale', {
 		intervals: function() { return store.getters.booleanIntervals; },
 		tonic: function(){ return store.getters.tonic; },
 
-		colors: function(){ return this.colorschemes[this.colorschemeIdx]; },
+		colors: function(){ return this.colorschemes[this.cfg.global.colorscheme]; },
 
 		noteNames: function() { return store.getters.noteNames; },
 		romanNumerals: function() { return store.getters.romanNumerals; },
@@ -893,14 +904,14 @@ Vue.component('taylored-scale', {
 		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 
 		<div class="cfg-box">
-			<button v-on:click="showCfg.global = !showCfg.global">Global Config</button>
-			<div v-show="showCfg.global" style="padding:0.5em">
+			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
+			<div v-show="cfg.global.showCfg" style="padding:0.5em">
 				Colorscheme:
 				<div style="padding-left:1em">
 					<div
 						v-for="(colors, key) in colorschemes"
-						v-on:click="colorschemeIdx = key"
-						:style="'margin-bottom:3px; border:'+(colorschemeIdx==key ? '3px solid #555' : '')+';'"
+						v-on:click="cfg.global.colorscheme = key"
+						:style="'margin-bottom:3px; border:'+(cfg.global.colorscheme==key ? '3px solid #555' : '')+';'"
 					>
 						<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
 					</div>
@@ -911,22 +922,22 @@ Vue.component('taylored-scale', {
 		<!-- Guitar -->
 		<div v-if="intervals">
 			<div class="cfg-box">
-				<button v-on:click="showCfg.guitar = !showCfg.guitar">Fretboard Config</button>
-				<div v-show="showCfg.guitar" style="padding:0.5em">
-					Frets: <input type="number" v-model="frets[0]" style="width:4em"/> to <input type="number" v-model="frets[1]" style="width:4em"/>
+				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Fretboard Config</button>
+				<div v-show="cfg.guitar.showCfg" style="padding:0.5em">
+					Frets: <input type="number" v-model="cfg.guitar.frets[0]" style="width:4em"/> to <input type="number" v-model="cfg.guitar.frets[1]" style="width:4em"/>
 					<br>
-					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="guitarWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.guitar.width += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
-					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="guitarHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.guitar.height += px">{{ (px>0 ? "+" : "") + px }}</button>
 				</div>
 			</div>
 			<br>
 			<guitar
-				:svgWidth="guitarWidth"
-				:svgHeight="guitarHeight"
+				:svgWidth="cfg.guitar.width"
+				:svgHeight="cfg.guitar.height"
 				:tonic="tonicIdx"
 				:intervals="intervals"
-				:frets="frets"
+				:frets="cfg.guitar.frets"
 				:labels="noteNames"
 				:colors="colors"
 			/>
@@ -942,27 +953,28 @@ Vue.component('taylored-scale', {
 		<!-- Piano -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<div class="cfg-box">
-				<button v-on:click="showCfg.piano = !showCfg.piano">Keyboard Config</button>
-				<div v-show="showCfg.piano" style="padding:0.5em">
-					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="pianoWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
+				<button v-on:click="cfg.piano.showCfg = !cfg.piano.showCfg">Keyboard Config</button>
+				<div v-show="cfg.piano.showCfg" style="padding:0.5em">
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.piano.width += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
-					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="pianoHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.piano.height += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
-					<label>
-						<input type="checkbox" v-model="pianoColorWholeKey"/>
-						Color whole key
-					</label>
+					Octaves: 
+					<label v-for="num in [1,2,3,4]">&nbsp;<input type="radio" :value="num" v-model="cfg.piano.octaves"/> {{ num }} </label>
+					<br>
+					<label><input type="checkbox" v-model="cfg.piano.colorWholeKey"/> Color whole key</label>
 				</div>
 			</div>
 			<br>
 			<piano
 				:x="0"
 				:y="0"
-				:svgWidth="pianoWidth"
-				:svgHeight="pianoHeight"
+				:svgWidth="cfg.piano.width"
+				:svgHeight="cfg.piano.height"
 				:labels="noteNames"
 				:colors="colors"
-				:colorWholeKey="pianoColorWholeKey"
+				:colorWholeKey="cfg.piano.colorWholeKey"
+				:octaves="cfg.piano.octaves"
 			/>
 		</div>
 
