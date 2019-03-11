@@ -527,32 +527,47 @@ Vue.component('note-wheel', {
 
 
 Vue.component('mode-switcher', {
+	props: {
+		labels: Array,
+	},
+
 	computed: {
 		tonic: function(){ return store.state.tonicIdx; },
 		intervals: function() { return store.getters.booleanIntervals; },
 
+		wrappedIntervals: function(){//.normalize this dup code (THIS ONE IS SLIGHTLY DIFFERENT FROM THE OTHERS)
+			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
+			var wrapIdx = this.tonic - 12;
+			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
+		},
+
 		modes: function() {
-			// Create array of modal interval sets
+			// Create array of modal interval sets.
 			var modes = [];
 			for (var i = 0, len = this.intervals.length; i < len; i++) {
-				if(this.intervals[i]) {
-					modes.push(this.intervals.slice(i).concat(this.intervals.slice(0,i)));
+				if(!this.intervals[i]) continue;
+
+				var modeIntervals = this.intervals.slice(i).concat(this.intervals.slice(0,i));
+
+				// Make sure it's not already in the array.
+				var already = false;
+				for (var j = 0, modesLen = modes.length; j < modesLen; j++) {
+					if(JSON.stringify(modes[j].intervals) == JSON.stringify(modeIntervals)) {
+						already = true;
+						break;
+					}
 				}
-			}
-			// Remove duplicates
-			var set = new Set(modes.map(JSON.stringify));
-			modes = Array.from(set).map(JSON.parse);
-			// Find Ian Ring numbers and names
-			for (var i = 0, len = modes.length; i < len; i++) {
-				var modeIntervals = modes[i];
+				if(already) continue;
+
 				var num = this.ianRingNumber(modeIntervals);
-				modes[i] = {
+				modes.push({
+					relativeIdx: i,
 					intervals: modeIntervals,
 					number: num,
 					name: this.scaleName(num),
-				};
+				});
 			}
-			// Sort by IR number
+			// Sort by IR number.
 			modes = modes.sort(function(a,b){
 				if(a.number < b.number) {
 					return -1;
@@ -566,7 +581,7 @@ Vue.component('mode-switcher', {
 	},
 
 	methods: {
-		ianRingNumber: function(intervals) {
+		ianRingNumber: function(intervals) {//.normalize?
 			var binary = intervals.slice().reverse().join('');
 			return parseInt(binary, 2);
 		},
@@ -603,8 +618,12 @@ Vue.component('mode-switcher', {
 			<tr v-for="(mode, i) in modes" style="font-size:0.8em">
 				<td>
 					Go to
-					<button v-on:click="goToParallel(i)" style="cursor:pointer">Parallel</button>
-					<button v-on:click="goToRelative(i)" style="cursor:pointer">Relative</button>
+					<button v-on:click="goToParallel(i)" style="cursor:pointer" :disabled="wrappedIntervals[mode.relativeIdx] == tonic">
+						{{ labels[tonic] }}
+					</button>
+					<button v-on:click="goToRelative(i)" style="cursor:pointer" :disabled="wrappedIntervals[mode.relativeIdx] == tonic">
+						{{ labels[wrappedIntervals[mode.relativeIdx]] }}
+					</button>
 				</td>
 				<td>{{ mode.name }}</td>
 			</tr>
@@ -951,7 +970,7 @@ Vue.component('taylored-scale', {
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Mode Switcher</h4>
-			<mode-switcher/>
+			<mode-switcher :labels="noteNames"/>
 		</div>
 
 		<div style="display:inline-block; margin:1em; max-width:35em; text-align:center;">
