@@ -766,6 +766,7 @@ Vue.component('taylored-scale', {
 				global: {
 					showCfg: false,
 					colorscheme: 'rainbowHandpicked',
+					useRoman: false,
 				},
 				guitar: {
 					showCfg: false,
@@ -782,7 +783,6 @@ Vue.component('taylored-scale', {
 				},
 				chords: {
 					showCfg: false,
-					useRoman: false,
 				},
 			},
 		};
@@ -910,6 +910,8 @@ Vue.component('taylored-scale', {
 		<div class="cfg-box">
 			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
 			<div v-show="cfg.global.showCfg" style="padding:0.5em">
+				<label><input type="checkbox" v-model="cfg.global.useRoman"/> Use Roman Numerals</label>
+				<br>
 				Colorscheme:
 				<div style="padding-left:1em">
 					<div
@@ -926,7 +928,7 @@ Vue.component('taylored-scale', {
 		<!-- Guitar -->
 		<div v-if="intervals">
 			<div class="cfg-box">
-				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Fretboard Config</button>
+				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Guitar Config</button>
 				<div v-show="cfg.guitar.showCfg" style="padding:0.5em">
 					Frets: <input type="number" v-model="cfg.guitar.frets[0]" style="width:4em"/> to <input type="number" v-model="cfg.guitar.frets[1]" style="width:4em"/>
 					<br>
@@ -942,7 +944,7 @@ Vue.component('taylored-scale', {
 				:tonic="tonicIdx"
 				:intervals="intervals"
 				:frets="cfg.guitar.frets"
-				:labels="noteNames"
+				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
 				:colors="colors"
 			/>
 		</div>
@@ -957,7 +959,7 @@ Vue.component('taylored-scale', {
 		<!-- Piano -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<div class="cfg-box">
-				<button v-on:click="cfg.piano.showCfg = !cfg.piano.showCfg">Keyboard Config</button>
+				<button v-on:click="cfg.piano.showCfg = !cfg.piano.showCfg">Piano Config</button>
 				<div v-show="cfg.piano.showCfg" style="padding:0.5em">
 					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.piano.width += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
@@ -975,7 +977,7 @@ Vue.component('taylored-scale', {
 				:y="0"
 				:svgWidth="cfg.piano.width"
 				:svgHeight="cfg.piano.height"
-				:labels="noteNames"
+				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
 				:colors="colors"
 				:colorWholeKey="cfg.piano.colorWholeKey"
 				:octaves="cfg.piano.octaves"
@@ -1014,14 +1016,7 @@ Vue.component('taylored-scale', {
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Available Chords</h4>
-			<div class="cfg-box">
-				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chords Config</button>
-				<div v-show="cfg.chords.showCfg" style="padding:0.5em">
-					<label><input type="checkbox" v-model="cfg.chords.useRoman"/> Use Roman Numerals</label>
-				</div>
-			</div>
-			<br>
-			<chords :labels="cfg.chords.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
+			<chords :labels="cfg.global.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
 		</div>
 
 		<!-- Find a scale -->
