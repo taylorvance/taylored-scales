@@ -1022,7 +1022,7 @@ Vue.component('taylored-scale', {
 				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
 				<div v-show="cfg.modes.showCfg" style="padding:0.5em">
 					Sorting:
-					<label v-for="(val, key) in {primacy:'Brightness', scale:'Scale order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
+					<label v-for="(val, key) in {primacy:'Primacy', scale:'Scale order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
 				</div>
 			</div>
 			<mode-switcher :labels="noteNames" :sortBy="cfg.modes.sortBy"/>
