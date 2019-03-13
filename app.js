@@ -529,6 +529,7 @@ Vue.component('note-wheel', {
 Vue.component('mode-switcher', {
 	props: {
 		labels: Array,
+		sortBy: {type: String, default: 'primacy'},//.enum this
 	},
 
 	computed: {
@@ -567,15 +568,20 @@ Vue.component('mode-switcher', {
 					name: this.scaleName(num),
 				});
 			}
-			// Sort by IR number.
-			modes = modes.sort(function(a,b){
-				if(a.number < b.number) {
-					return -1;
-				} else {
-					return (a.number > b.number) ? 1 : 0;
-				}
-			});
-			modes.reverse(); // (prime form last)
+
+			if(this.sortBy == 'primacy') {
+				// Sort by IR number.
+				modes = modes.sort(function(a,b){
+					if(a.number < b.number) {
+						return -1;
+					} else {
+						return (a.number > b.number) ? 1 : 0;
+					}
+				});
+				modes.reverse(); // (prime form (darkest) last)
+			}
+
+			// by default sort by scale order
 			return modes;
 		},
 	},
@@ -786,8 +792,9 @@ Vue.component('taylored-scale', {
 				info: {
 					showAliases: false,
 				},
-				chords: {
+				modes: {
 					showCfg: false,
+					sortBy: 'primacy',
 				},
 			},
 		};
@@ -1011,8 +1018,14 @@ Vue.component('taylored-scale', {
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<h4>Mode Switcher</h4>
-			<mode-switcher :labels="noteNames"/>
+			<div class="cfg-box">
+				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
+				<div v-show="cfg.modes.showCfg" style="padding:0.5em">
+					Sorting:
+					<label v-for="(val, key) in {primacy:'Brightness', scale:'Scale order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
+				</div>
+			</div>
+			<mode-switcher :labels="noteNames" :sortBy="cfg.modes.sortBy"/>
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
