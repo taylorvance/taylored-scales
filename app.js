@@ -529,7 +529,7 @@ Vue.component('note-wheel', {
 Vue.component('mode-switcher', {
 	props: {
 		labels: Array,
-		sortBy: {type: String, default: 'primacy'},//.enum this
+		sortBy: {type: String, default: 'primeForm'},//.enum this
 	},
 
 	computed: {
@@ -569,7 +569,7 @@ Vue.component('mode-switcher', {
 				});
 			}
 
-			if(this.sortBy == 'primacy') {
+			if(this.sortBy == 'primeForm') {
 				// Sort by IR number.
 				modes = modes.sort(function(a,b){
 					if(a.number < b.number) {
@@ -794,7 +794,7 @@ Vue.component('taylored-scale', {
 				},
 				modes: {
 					showCfg: false,
-					sortBy: 'primacy',
+					sortBy: 'primeForm',
 				},
 			},
 		};
@@ -1022,7 +1022,7 @@ Vue.component('taylored-scale', {
 				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
 				<div v-show="cfg.modes.showCfg" style="padding:0.5em">
 					Sorting:
-					<label v-for="(val, key) in {primacy:'Primacy', scale:'Scale order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
+					<label v-for="(val, key) in {primeForm:'Prime form', scale:'Scale order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
 				</div>
 			</div>
 			<mode-switcher :labels="noteNames" :sortBy="cfg.modes.sortBy"/>
