@@ -587,7 +587,7 @@ Vue.component('mode-switcher', {
 		},
 
 		scaleName: function(ianRingNum) {
-			var names = scaleNames[ianRingNum];
+			var names = scaleNames[ianRingNum];//.hack (other file)
 			if(names === undefined) {
 				return 'Scale #' + ianRingNum;
 			} else {
@@ -732,7 +732,7 @@ Vue.component('taylored-scale', {
 		var frets = [0, Math.floor(window.innerWidth / 64)];
 
 		return {
-			scaleNames: scaleNames,//.hack (other file)
+			allScaleNames: scaleNames,//.hack (other file)
 			colorschemes: {
 				/*
 				rainbowPure: [
@@ -782,6 +782,9 @@ Vue.component('taylored-scale', {
 					height: 170,
 					octaves: 2,
 					colorWholeKey: true,
+				},
+				info: {
+					showAliases: false,
 				},
 				chords: {
 					showCfg: false,
@@ -833,11 +836,20 @@ Vue.component('taylored-scale', {
 			return parseInt(binary, 2);
 		},
 
+		scaleNames: function(){
+			return this.allScaleNames[this.ianRingNumber] || [];
+		},
+		scaleName: function(){
+			var names = this.scaleNames;
+			if(!names || !names[0]) return "#"+this.ianRingNumber;
+			else return names[0];
+		},
+
 		allIanRingScales: function(){
 			var all = [];
-			for (num in this.scaleNames) {
-				for (i in this.scaleNames[num]) {
-					all.push({num: num, name: this.scaleNames[num][i]});
+			for (num in this.allScaleNames) {
+				for (i in this.allScaleNames[num]) {
+					all.push({num: num, name: this.allScaleNames[num][i]});
 				}
 			}
 			return all.sort(function(a,b){
@@ -861,15 +873,7 @@ Vue.component('taylored-scale', {
 			}
 		},
 
-		ianRingScaleName: function(){
-			var names = this.scaleNames[this.ianRingNumber];
-			if(!names) return "("+this.ianRingNumber+")";
-			else return names[0];
-		},
-
-		urlParams: function(){ return new URLSearchParams(window.location.search); },
-
-		keyAndScale: function(){ return [this.tonic, this.intervals]; },
+		tonicAndIntervals: function() { return [this.tonic, this.intervals]; },
 	},
 
 	methods: {
@@ -879,12 +883,16 @@ Vue.component('taylored-scale', {
 			store.commit('setIntervals', intervals);
 		},
 
-		getParam(name) { return this.urlParams.get(name); },
+		urlParams: function() { return new URLSearchParams(window.location.search); },
+
+		getParam(name) { return this.urlParams().get(name); },
 		setParam(name, value) {
-			var params = this.urlParams;
+			var params = this.urlParams();
 			params.set('tonic', value);
 			window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 		},
+
+		keyAndScale: function() { return this.tonic + ' ' + this.scaleName; },
 
 		test() {
 			console.log('hi');
@@ -892,17 +900,9 @@ Vue.component('taylored-scale', {
 	},
 
 	watch: {
-		keyAndScale: function(newval, oldval) {
+		tonicAndIntervals: function(newval, oldval) {
 			// Update document title
-			var title = 'Taylored Scales - ';
-			title += this.tonic;
-			var names = this.scaleNames[this.ianRingNumber];
-			if(names) {
-				var name = names[0];
-				title += ' ' + this.scaleNames[this.ianRingNumber][0];
-			}
-			title += ' (' + this.ianRingNumber + ')';
-			document.title = title;
+			document.title = 'Taylored Scales - ' + this.keyAndScale();
 		},
 	},
 
@@ -988,26 +988,20 @@ Vue.component('taylored-scale', {
 
 		<br>
 
-		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<h4>Mode Switcher</h4>
-			<mode-switcher :labels="noteNames"/>
-		</div>
-
-		<div style="display:inline-block; margin:1em; max-width:35em; text-align:center;">
-			<h4>{{ tonic + ' ' + ianRingScaleName }}</h4>
+		<div style="display:inline-block; margin:1em; max-width:30em;">
+			<h4><a :href="permLink">{{ keyAndScale() }}</a></h4>
 			<p style="font-size:0.8em">
-				Link to this scale:&nbsp;&nbsp;
-				<a :href="permLink">{{ permLink }}</a>
-			</p>
-			<p style="font-size:0.8em">
-				<i>Other names for this scale:</i>
-				&nbsp;&nbsp;
-				<span v-for="(name, i) in scaleNames[ianRingNumber]" style="white-space:nowrap">
-					{{ name }}
-					<span v-if="i != scaleNames[ianRingNumber].length - 1" style="white-space:normal">
-						&nbsp;&mdash;&nbsp;
+				<button v-show="scaleNames.length > 1" v-on:click="cfg.info.showAliases = !cfg.info.showAliases">
+					other names
+				</button>
+				<div v-show="cfg.info.showAliases">
+					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
+						{{ name }}
+						<span v-if="i != scaleNames.length - 1" style="white-space:normal">
+							&nbsp;&mdash;&nbsp;
+						</span>
 					</span>
-				</span>
+				</div>
 			</p>
 			<p style="font-size:0.8em; font-style:italic;">
 				Learn more about
@@ -1017,12 +1011,17 @@ Vue.component('taylored-scale', {
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
+			<h4>Mode Switcher</h4>
+			<mode-switcher :labels="noteNames"/>
+		</div>
+
+		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Available Chords</h4>
 			<chords :labels="cfg.global.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
 		</div>
 
 		<!-- Find a scale -->
-		<div style="display:inline-block">
+		<div>
 			<h4>Scale Finder</h4>
 			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
 			<div style="border:1px solid black; font-size:0.75em; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
