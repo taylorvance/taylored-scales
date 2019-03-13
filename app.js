@@ -994,7 +994,7 @@ Vue.component('taylored-scale', {
 				<button v-show="scaleNames.length > 1" v-on:click="cfg.info.showAliases = !cfg.info.showAliases">
 					other names
 				</button>
-				<div v-show="cfg.info.showAliases">
+				<div v-show="cfg.info.showAliases" style="font-size:0.8em">
 					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
 						{{ name }}
 						<span v-if="i != scaleNames.length - 1" style="white-space:normal">
