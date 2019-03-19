@@ -459,7 +459,6 @@ Vue.component('note-wheel', {
 	props: {
 		size: {type: Number, required: true},
 		colors: Array,
-		},
 	},
 
 	computed: {
