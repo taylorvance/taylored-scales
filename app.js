@@ -810,9 +810,8 @@ Vue.component('taylored-scale', {
 		}
 
 		// Respect the cookie
-		var cs = this.getCookie('colorschemeIdx');
-		if(cs === null) this.colorschemeIdx = 'rainbowHandpicked';
-		else this.colorschemeIdx = cs;
+		var cs = this.getCookie('colorscheme');
+		if(cs) this.cfg.global.colorscheme = cs;
 	},
 
 	computed: {
@@ -883,7 +882,7 @@ Vue.component('taylored-scale', {
 
 		cookies: function(){
 			return {
-				colorscheme: this.colorschemeIdx,
+				colorscheme: this.cfg.global.colorscheme,
 			};
 		},
 
@@ -927,6 +926,7 @@ Vue.component('taylored-scale', {
 
 		test() {
 			console.log('cookie', document.cookie);
+			console.log(this.getCookie('_gid'));
 		},
 	},
 
@@ -938,13 +938,13 @@ Vue.component('taylored-scale', {
 
 		cookies: function(newval, oldval) {
 			for(key in newval) {
-				document.cookie = key+"="+newval[key];
+				this.setCookie(key, newval[key]);
 			}
 		}
 	},
 
 	template: `<div>
-		<div v-if="0"><hr><button v-on:click="test">test</button></div>
+		<div v-if="1"><hr><button v-on:click="test">test</button></div>
 
 		<div class="cfg-box">
 			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
