@@ -32,6 +32,7 @@ const store = new Vuex.Store({
 			if(idx < 0) idx = 0;
 			state.tonicIdx = idx % state.intervalSet.length;
 		},
+
 		setIntervals(state, newIntervals) {
 			// Fill any missing intervals with 0
 			for (var i = 0, len = state.intervalSet.length - newIntervals.length; i < len; i++) {
@@ -45,6 +46,7 @@ const store = new Vuex.Store({
 		toggleInterval(state, idx) {
 			state.intervalSet[idx].on = !state.intervalSet[idx].on;
 		},
+
 		enharmonicizeInterval(state, idx) {
 			state.intervalSet[idx].enharmonics.push(state.intervalSet[idx].enharmonics.shift());
 		},
@@ -68,9 +70,7 @@ const store = new Vuex.Store({
 			var tonicLetterIdx = allLetters.indexOf(tonicLetter);
 
 			state.intervalSet.forEach(function(interval, i) {
-				var intervalName = interval.enharmonics[0];
-				var quality = intervalName[0];
-				var number = parseInt(intervalName[1]);
+				var number = parseInt(interval.enharmonics[0][1]);
 				var semitones = i;
 
 				var targetLetter = allLetters[tonicLetterIdx + number - 1];
@@ -84,8 +84,32 @@ const store = new Vuex.Store({
 
 			var wrapIdx = state.pitchClasses.length - state.tonicIdx;
 			return names.slice(wrapIdx).concat(names.slice(0, wrapIdx));
+		},
 
-			return names;
+		romanNumerals: function(state) {
+			var numerals = [];
+
+			var intervalMap = {
+				P1:'I',
+				m2:'bII', A1:'#I',
+				M2:'II', d3:'bbIII',
+				m3:'bIII', A2:'#II',
+				M3:'III', d4:'bIV',
+				P4:'IV', A3:'#III',
+				A4:'#IV', d5:'bV',
+				P5:'V', d6:'bbVI',
+				m6:'bVI', A5:'#V',
+				M6:'VI', d7:'bVII',
+				m7:'bVII', A6:'#VI',
+				M7:'VII', d8:'bVIII',
+			};
+
+			state.intervalSet.forEach(function(interval, i) {
+				numerals.push(intervalMap[interval.enharmonics[0]]);
+			});
+
+			var wrapIdx = state.pitchClasses.length - state.tonicIdx;
+			return numerals.slice(wrapIdx).concat(numerals.slice(0, wrapIdx));
 		},
 	},
 });
@@ -195,36 +219,36 @@ Vue.component('guitar', {
 	},
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
-		<!-- Fret markers -->
-		<rect
-			v-for="(fret, i) in fretAry"
-			v-if="i > 0 && [3,5,7,9,12,15,17,19,21,23,25,27].includes(fret)"
-			:x="fretX(i) - 2*fretDistance/3"
-			:y="stringY(tuning.length) + stringDistance/2"
-			:width="fretDistance/3"
-			:height="stringDistance * (tuning.length-2)"
-			fill="#eee"
-		/>
-
-		<!-- Frets -->
-		<fret v-for="(fret, i) in fretAry" :key="fret.id" :x1="fretX(i)" :y1="y" :x2="fretX(i)" :y2="y + height" :num="fret"/>
-
-		<!-- Strings -->
-		<string v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id" :x1="x" :y1="stringY(i + 1)" :x2="x + width" :y2="stringY(i + 1)"/>
-
-		<!-- Notes -->
-		<g v-for="(tuningIdx, i) in tuning" :key="tuningIdx.id">
-			<note-dot
-				v-for="(fret, j) in fretAry"
-				v-if="intervals[wrappedIdxs[(tuningIdx + fret) % 12]]"
-				:key="fret.id"
-				:x="noteX(j)"
-				:y="stringY(i + 1)"
-				:r="noteRadius"
-				:label="labels[(tuningIdx + fret) % 12]"
-				:color="colors[wrappedIdxs[(tuningIdx + fret) % 12]]"
+			<!-- Fret markers -->
+			<rect
+				v-for="(fret, i) in fretAry"
+				v-if="i > 0 && [3,5,7,9,12,15,17,19,21,23,25,27].includes(fret)"
+				:x="fretX(i) - 2*fretDistance/3"
+				:y="stringY(tuning.length) + stringDistance/2"
+				:width="fretDistance/3"
+				:height="stringDistance * (tuning.length-2)"
+				fill="#eee"
 			/>
-		</g>
+
+			<!-- Frets -->
+			<fret v-for="(fret, i) in fretAry" :key="fret.id" :x1="fretX(i)" :y1="y" :x2="fretX(i)" :y2="y + height" :num="fret"/>
+
+			<!-- Strings -->
+			<string v-for="(intervalIdx, i) in tuning" :key="intervalIdx.id" :x1="x" :y1="stringY(i + 1)" :x2="x + width" :y2="stringY(i + 1)"/>
+
+			<!-- Notes -->
+			<g v-for="(tuningIdx, i) in tuning" :key="tuningIdx.id">
+				<note-dot
+					v-for="(fret, j) in fretAry"
+					v-if="intervals[wrappedIdxs[(tuningIdx + fret) % 12]]"
+					:key="fret.id"
+					:x="noteX(j)"
+					:y="stringY(i + 1)"
+					:r="noteRadius"
+					:label="labels[(tuningIdx + fret) % 12]"
+					:color="colors[wrappedIdxs[(tuningIdx + fret) % 12]]"
+				/>
+			</g>
 
 		<circle v-if="0" v-on:click="test()" cx="0" cy="0" r="20" fill="green" stroke="black" stroke-width="3"/>
 	</svg>`
@@ -245,6 +269,7 @@ Vue.component('piano', {
 		octaves: {type: Number, default: 2},
 		labels: Array,
 		colors: Array,
+		colorWholeKey: {type: Boolean, default: false},
 	},
 
 	computed: {
@@ -308,13 +333,27 @@ Vue.component('piano', {
 			}
 			return x;
 		},
+		color(i) {
+			if(this.intervals[this.wrappedIntervals[i]])
+				return this.colors[this.wrappedIntervals[i]];
+			else
+				return false;
+		},
 		test() { console.log(this.tuning); },
 	},
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
 		<!-- White keys -->
 		<g v-for="(interval, i) in whiteKeys" :key="interval.id">
-			<rect :x="whiteX(i)" :y="strokeWidth" :width="whiteWidth" :height="height" fill="white" stroke="black" :stroke-width="strokeWidth"/>
+			<rect
+				:x="whiteX(i)"
+				:y="strokeWidth"
+				:width="whiteWidth"
+				:height="height"
+				:fill="colorWholeKey ? (color(interval) || 'white') : 'white'"
+				stroke="black"
+				:stroke-width="strokeWidth"
+			/>
 			<note-dot
 				v-if="intervals[wrappedIntervals[interval]]"
 				:x="whiteX(i) + whiteWidth/2"
@@ -327,7 +366,15 @@ Vue.component('piano', {
 
 		<!-- Black keys -->
 		<g v-for="(interval, i) in blackKeys" :key="interval.id">
-			<rect :x="blackX(i)" :y="strokeWidth" :width="blackWidth" :height="blackHeight" fill="#333" stroke="black" :stroke-width="strokeWidth"/>
+			<rect
+				:x="blackX(i)"
+				:y="strokeWidth"
+				:width="blackWidth"
+				:height="blackHeight"
+				:fill="colorWholeKey ? (color(interval) || '#333') : '#333'"
+				stroke="black"
+				:stroke-width="strokeWidth"
+			/>
 			<note-dot
 				v-if="intervals[wrappedIntervals[interval]]"
 				:x="blackX(i) + blackWidth/2"
@@ -412,9 +459,6 @@ Vue.component('note-wheel', {
 	props: {
 		size: {type: Number, required: true},
 		colors: Array,
-		circleOf: {
-			validator: function(value) { return [2,4,5].indexOf(value) !== -1; },
-			default: 2, // circle of 2nds (chromatic)
 		},
 	},
 
@@ -480,52 +524,73 @@ Vue.component('note-wheel', {
 
 
 Vue.component('mode-switcher', {
+	props: {
+		labels: Array,
+		sortBy: {type: String, default: 'primeForm'},//.enum this
+	},
+
 	computed: {
 		tonic: function(){ return store.state.tonicIdx; },
 		intervals: function() { return store.getters.booleanIntervals; },
 
+		wrappedIntervals: function(){//.normalize this dup code (THIS ONE IS SLIGHTLY DIFFERENT FROM THE OTHERS)
+			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
+			var wrapIdx = this.tonic - 12;
+			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
+		},
+
 		modes: function() {
-			// Create array of modal interval sets
+			// Create array of modal interval sets.
 			var modes = [];
 			for (var i = 0, len = this.intervals.length; i < len; i++) {
-				if(this.intervals[i]) {
-					modes.push(this.intervals.slice(i).concat(this.intervals.slice(0,i)));
+				if(!this.intervals[i]) continue;
+
+				var modeIntervals = this.intervals.slice(i).concat(this.intervals.slice(0,i));
+
+				// Make sure it's not already in the array.
+				var already = false;
+				for (var j = 0, modesLen = modes.length; j < modesLen; j++) {
+					if(JSON.stringify(modes[j].intervals) == JSON.stringify(modeIntervals)) {
+						already = true;
+						break;
+					}
 				}
-			}
-			// Remove duplicates
-			var set = new Set(modes.map(JSON.stringify));
-			modes = Array.from(set).map(JSON.parse);
-			// Find Ian Ring numbers and names
-			for (var i = 0, len = modes.length; i < len; i++) {
-				var modeIntervals = modes[i];
+				if(already) continue;
+
 				var num = this.ianRingNumber(modeIntervals);
-				modes[i] = {
+				modes.push({
+					relativeIdx: i,
 					intervals: modeIntervals,
 					number: num,
 					name: this.scaleName(num),
-				};
+				});
 			}
-			// Sort by IR number
-			modes = modes.sort(function(a,b){
-				if(a.number < b.number) {
-					return -1;
-				} else {
-					return (a.number > b.number) ? 1 : 0;
-				}
-			});
-			modes.reverse(); // (prime form last)
+
+			if(this.sortBy == 'primeForm') {
+				// Sort by IR number.
+				modes = modes.sort(function(a,b){
+					if(a.number < b.number) {
+						return -1;
+					} else {
+						return (a.number > b.number) ? 1 : 0;
+					}
+				});
+				modes.reverse(); // (prime form (darkest) last)
+			}
+
+			// by default sort by mode order
 			return modes;
 		},
 	},
 
 	methods: {
-		ianRingNumber: function(intervals) {
+		ianRingNumber: function(intervals) {//.normalize?
 			var binary = intervals.slice().reverse().join('');
 			return parseInt(binary, 2);
 		},
 
 		scaleName: function(ianRingNum) {
-			var names = scaleNames[ianRingNum];
+			var names = scaleNames[ianRingNum];//.hack (other file)
 			if(names === undefined) {
 				return 'Scale #' + ianRingNum;
 			} else {
@@ -556,8 +621,12 @@ Vue.component('mode-switcher', {
 			<tr v-for="(mode, i) in modes" style="font-size:0.8em">
 				<td>
 					Go to
-					<button v-on:click="goToParallel(i)" style="cursor:pointer">Parallel</button>
-					<button v-on:click="goToRelative(i)" style="cursor:pointer">Relative</button>
+					<button v-on:click="goToParallel(i)" style="cursor:pointer" :disabled="wrappedIntervals[mode.relativeIdx] == tonic">
+						{{ labels[tonic] }}
+					</button>
+					<button v-on:click="goToRelative(i)" style="cursor:pointer" :disabled="wrappedIntervals[mode.relativeIdx] == tonic">
+						{{ labels[wrappedIntervals[mode.relativeIdx]] }}
+					</button>
 				</td>
 				<td>{{ mode.name }}</td>
 			</tr>
@@ -663,48 +732,10 @@ Vue.component('chords', {
 
 Vue.component('taylored-scale', {
 	data: function() {
-		var notationSystems = {};
-		// letters: C Db D Eb E F F# G Ab A Bb B
-		notationSystems.letters = [
-			['C','B#','Dbb'], ['Db','Bx','C#'], ['D','Cx','Ebb'], ['Eb','D#','Fbb'], ['E','Dx','Fb'], ['F','E#','Gbb'],
-			['F#','Ex','Gb'], ['G','Fx','Abb'], ['Ab','G#'], ['A','Gx','Bbb'], ['Bb','A#','Cbb'], ['B','Ax','Cb']
-		];
-		// degrees: 1 b2 2 b3 3 4 #4 5 b6 6 b7 7
-		notationSystems.degrees = [
-			['R','1'], ['b2','#1'], ['2'], ['b3','#2'], ['3'], ['4'],
-			['T','#4','b5'], ['5'], ['b6','#5'], ['6'], ['b7','#6'], ['7']
-		];
-		// roman numerals: I bII II bIII III IV #IV V bVI VI bVII VII
-		notationSystems.roman = [
-			['I'], ['bII','#I'], ['II'], ['bIII','#II'], ['III'], ['IV'],
-			['#IV','bV'], ['V'], ['bVI','#V'], ['VI'], ['bVII','#VI'], ['VII']
-		];
-		// intervals: P1 m2 M2 m3 M3 P4 A4 P5 m6 M6 m7 M7
-		notationSystems.intervals = [
-			['P1','d2'], ['m2','A1'], ['M2','d3'], ['m3','A2'], ['M3','d4'], ['P4','A3'],
-			['A4','d5'], ['P5','d6'], ['m6','A5'], ['M6','d7'], ['m7','A6'], ['M7','d8']
-		];
-		// solfege: do di re ri mi fa fi so si la li ti
-		notationSystems.solfege = [
-			['do'], ['di','ra'], ['re'], ['ri','me'], ['mi'], ['fa'],
-			['fi','se'], ['so','sol'], ['si','le'], ['la'], ['li','te'], ['ti']
-		];
-		// semitones: 0 1 2 3 4 5 6 7 8 9 10 11
-		notationSystems.semitones = [
-			['0'], ['1'], ['2'], ['3'], ['4'], ['5'],
-			['6'], ['7'], ['8'], ['9'], ['10'], ['11']
-		];
-		// blank:
-		notationSystems.blank = [
-			[''], [''], [''], [''], [''], [''],
-			[''], [''], [''], [''], [''], ['']
-		];
-
 		var frets = [0, Math.floor(window.innerWidth / 64)];
 
 		return {
-			notationSystems: notationSystems,
-			scaleNames: scaleNames,//.hack (other file)
+			allScaleNames: scaleNames,//.hack (other file)
 			colorschemes: {
 				/*
 				rainbowPure: [
@@ -724,18 +755,45 @@ Vue.component('taylored-scale', {
 					'#ff0000', '#ff6600', '#ff9904', '#ffcc02', '#f6f600', '#66cc02',
 					'#049901', '#0db4c2', '#0151d4', '#660099', '#990099', '#cc0099'
 				],
+				/*
+				darkAccident: [
+					'hsl(0,100%,50%)', 'hsl(15,100%,40%)', 'hsl(30,100%,50%)', 'hsl(45,100%,40%)', 'hsl(60,92%,50%)', 'hsl(90,100%,45%)',
+					'hsl(170,100%,25%)', 'hsl(210,100%,60%)', 'hsl(220,100%,35%)', 'hsl(250,100%,65%)', 'hsl(270,100%,35%)', 'hsl(290,100%,60%)'
+				],
 				monochrome: ['#f00', '#e00', '#d00', '#c00', '#b00', '#a00', '#900', '#800', '#700', '#600', '#500', '#400'],
 				noir: ['#000', '#111', '#222', '#333', '#444', '#555', '#666', '#777', '#888', '#999', '#aaa', '#bbb'],
+				whiteBlackKeys: ['#aaa', '#555', '#aaa', '#555', '#aaa', '#aaa', '#555', '#aaa', '#555', '#aaa', '#555', '#aaa'],
 				black: ['#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000'],
+				*/
 			},
-			colorschemeIdx: 'rainbowHandpicked',
 			scaleSearch: null,
-			frets: frets,
-			showCfg: {global:false, guitar:false, piano:false},
-			guitarWidth: window.innerWidth,
-			guitarHeight: 200,
-			pianoWidth: Math.max(400, window.innerWidth * 0.5),
-			pianoHeight: 170,
+			cfg: {
+				global: {
+					showCfg: false,
+					colorscheme: 'rainbowHandpicked',
+					useRoman: false,
+				},
+				guitar: {
+					showCfg: false,
+					width: window.innerWidth,
+					height: 200,
+					frets: frets,
+				},
+				piano: {
+					showCfg: false,
+					width: Math.max(400, window.innerWidth * 0.5),
+					height: 170,
+					octaves: 2,
+					colorWholeKey: true,
+				},
+				info: {
+					showAliases: false,
+				},
+				modes: {
+					showCfg: false,
+					sortBy: 'primeForm',
+				},
+			},
 		};
 	},
 
@@ -766,18 +824,10 @@ Vue.component('taylored-scale', {
 		intervals: function() { return store.getters.booleanIntervals; },
 		tonic: function(){ return store.getters.tonic; },
 
-		colors: function(){ return this.colorschemes[this.colorschemeIdx]; },
-
-		labels: function() {
-			//.later: allow selection and save state of preferred enharmonics
-			var labels = {};
-			for (var system in this.notationSystems) {
-				labels[system] = this.notationSystems[system].map(function(enharmonics){ return enharmonics[0]; });
-			}
-			return labels;
-		},
+		colors: function(){ return this.colorschemes[this.cfg.global.colorscheme]; },
 
 		noteNames: function() { return store.getters.noteNames; },
+		romanNumerals: function() { return store.getters.romanNumerals; },
 
 		permLink: function(){
 			var url = window.location.href.split('?')[0];
@@ -795,11 +845,20 @@ Vue.component('taylored-scale', {
 			return parseInt(binary, 2);
 		},
 
+		scaleNames: function(){
+			return this.allScaleNames[this.ianRingNumber] || [];
+		},
+		scaleName: function(){
+			var names = this.scaleNames;
+			if(!names || !names[0]) return "#"+this.ianRingNumber;
+			else return names[0];
+		},
+
 		allIanRingScales: function(){
 			var all = [];
-			for (num in this.scaleNames) {
-				for (i in this.scaleNames[num]) {
-					all.push({num: num, name: this.scaleNames[num][i]});
+			for (num in this.allScaleNames) {
+				for (i in this.allScaleNames[num]) {
+					all.push({num: num, name: this.allScaleNames[num][i]});
 				}
 			}
 			return all.sort(function(a,b){
@@ -823,21 +882,13 @@ Vue.component('taylored-scale', {
 			}
 		},
 
-		ianRingScaleName: function(){
-			var names = this.scaleNames[this.ianRingNumber];
-			if(!names) return "("+this.ianRingNumber+")";
-			else return names[0];
-		},
-
-		urlParams: function(){ return new URLSearchParams(window.location.search); },
-
-		keyAndScale: function(){ return [this.tonic, this.intervals]; },
-
 		cookies: function(){
 			return {
 				colorscheme: this.colorschemeIdx,
 			};
 		},
+
+		tonicAndIntervals: function() { return [this.tonic, this.intervals]; },
 	},
 
 	methods: {
@@ -847,9 +898,11 @@ Vue.component('taylored-scale', {
 			store.commit('setIntervals', intervals);
 		},
 
-		getParam(name) { return this.urlParams.get(name); },
+		urlParams: function() { return new URLSearchParams(window.location.search); },
+
+		getParam(name) { return this.urlParams().get(name); },
 		setParam(name, value) {
-			var params = this.urlParams;
+			var params = this.urlParams();
 			params.set('tonic', value);
 			window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 		},
@@ -871,27 +924,17 @@ Vue.component('taylored-scale', {
 		},
 		setCookie(cname, cvalue) { document.cookie = cname + "=" + cvalue; },
 
+		keyAndScale: function() { return this.tonic + ' ' + this.scaleName; },
+
 		test() {
 			console.log('cookie', document.cookie);
 		},
 	},
 
 	watch: {
-		keyAndScale: function(newval, oldval) {
+		tonicAndIntervals: function(newval, oldval) {
 			// Update document title
-			var title = 'Taylored Scales - ';
-			title += this.tonic;
-			var names = this.scaleNames[this.ianRingNumber];
-			if(names) {
-				var name = names[0];
-				title += ' ' + this.scaleNames[this.ianRingNumber][0];
-			}
-			title += ' (' + this.ianRingNumber + ')';
-			document.title = title;
-
-			// Set cookie
-			//document.cookie = "tonic=" + this.tonicIdx;
-			//document.cookie = "intervals=" + this.intervals.join('');
+			document.title = 'Taylored Scales - ' + this.keyAndScale();
 		},
 
 		cookies: function(newval, oldval) {
@@ -902,17 +945,19 @@ Vue.component('taylored-scale', {
 	},
 
 	template: `<div>
-		<div v-if="1"><hr><button v-on:click="test">test</button></div>
+		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 
 		<div class="cfg-box">
-			<button v-on:click="showCfg.global = !showCfg.global">Global Config</button>
-			<div v-show="showCfg.global" style="padding:0.5em">
+			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
+			<div v-show="cfg.global.showCfg" style="padding:0.5em">
+				<label><input type="checkbox" v-model="cfg.global.useRoman"/> Use Roman Numerals</label>
+				<br>
 				Colorscheme:
 				<div style="padding-left:1em">
 					<div
 						v-for="(colors, key) in colorschemes"
-						v-on:click="colorschemeIdx = key"
-						:style="'margin-bottom:3px; border:'+(colorschemeIdx==key ? '3px solid #555' : '')+';'"
+						v-on:click="cfg.global.colorscheme = key"
+						:style="'margin-bottom:3px; border:'+(cfg.global.colorscheme==key ? '3px solid #555' : '')+';'"
 					>
 						<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
 					</div>
@@ -923,23 +968,23 @@ Vue.component('taylored-scale', {
 		<!-- Guitar -->
 		<div v-if="intervals">
 			<div class="cfg-box">
-				<button v-on:click="showCfg.guitar = !showCfg.guitar">Fretboard Config</button>
-				<div v-show="showCfg.guitar" style="padding:0.5em">
-					Frets: <input type="number" v-model="frets[0]" style="width:5em"/> to <input type="number" v-model="frets[1]" style="width:4em"/>
+				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Guitar Config</button>
+				<div v-show="cfg.guitar.showCfg" style="padding:0.5em">
+					Frets: <input type="number" v-model="cfg.guitar.frets[0]" style="width:4em"/> to <input type="number" v-model="cfg.guitar.frets[1]" style="width:4em"/>
 					<br>
-					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="guitarWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.guitar.width += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
-					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="guitarHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.guitar.height += px">{{ (px>0 ? "+" : "") + px }}</button>
 				</div>
 			</div>
 			<br>
 			<guitar
-				:svgWidth="guitarWidth"
-				:svgHeight="guitarHeight"
+				:svgWidth="cfg.guitar.width"
+				:svgHeight="cfg.guitar.height"
 				:tonic="tonicIdx"
 				:intervals="intervals"
-				:frets="frets"
-				:labels="noteNames"
+				:frets="cfg.guitar.frets"
+				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
 				:colors="colors"
 			/>
 		</div>
@@ -954,48 +999,49 @@ Vue.component('taylored-scale', {
 		<!-- Piano -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<div class="cfg-box">
-				<button v-on:click="showCfg.piano = !showCfg.piano">Keyboard Config</button>
-				<div v-show="showCfg.piano" style="padding:0.5em">
-					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="pianoWidth += px">{{ (px>0 ? "+" : "") + px }}</button>
+				<button v-on:click="cfg.piano.showCfg = !cfg.piano.showCfg">Piano Config</button>
+				<div v-show="cfg.piano.showCfg" style="padding:0.5em">
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.piano.width += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
-					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="pianoHeight += px">{{ (px>0 ? "+" : "") + px }}</button>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.piano.height += px">{{ (px>0 ? "+" : "") + px }}</button>
+					<br>
+					Octaves: 
+					<label v-for="num in [1,2,3,4]">&nbsp;<input type="radio" :value="num" v-model="cfg.piano.octaves"/> {{ num }} </label>
+					<br>
+					<label><input type="checkbox" v-model="cfg.piano.colorWholeKey"/> Color whole key</label>
 				</div>
 			</div>
 			<br>
 			<piano
 				:x="0"
 				:y="0"
-				:svgWidth="pianoWidth"
-				:svgHeight="pianoHeight"
-				:labels="noteNames"
+				:svgWidth="cfg.piano.width"
+				:svgHeight="cfg.piano.height"
+				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
 				:colors="colors"
+				:colorWholeKey="cfg.piano.colorWholeKey"
+				:octaves="cfg.piano.octaves"
 			/>
 		</div>
 
 		<br>
 
-		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<h4>Mode Switcher</h4>
-			<mode-switcher/>
-		</div>
-
-		<div style="display:inline-block; margin:1em; max-width:35em; text-align:center;">
-			<h4>{{ tonic + ' ' + ianRingScaleName }}</h4>
+		<div style="display:inline-block; margin:1em; max-width:20em;">
+			<h4><a :href="permLink">{{ keyAndScale() }}</a></h4>
 			<p style="font-size:0.8em">
-				Link to this scale:&nbsp;&nbsp;
-				<a :href="permLink">{{ permLink }}</a>
-			</p>
-			<p style="font-size:0.8em">
-				<i>Other names for this scale:</i>
-				&nbsp;&nbsp;
-				<span v-for="(name, i) in scaleNames[ianRingNumber]" style="white-space:nowrap">
-					{{ name }}
-					<span v-if="i != scaleNames[ianRingNumber].length - 1" style="white-space:normal">
-						&nbsp;&mdash;&nbsp;
+				<button v-show="scaleNames.length > 1" v-on:click="cfg.info.showAliases = !cfg.info.showAliases">
+					other names
+				</button>
+				<div v-show="cfg.info.showAliases" style="font-size:0.8em">
+					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
+						{{ name }}
+						<span v-if="i != scaleNames.length - 1" style="white-space:normal">
+							&nbsp;&mdash;&nbsp;
+						</span>
 					</span>
-				</span>
+				</div>
 			</p>
-			<p style="font-size:0.8em; font-style:italic;">
+			<p style="font-size:0.8em">
 				Learn more about
 				<a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a>
 				at Ian Ring's website.
@@ -1003,12 +1049,23 @@ Vue.component('taylored-scale', {
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
+			<div class="cfg-box">
+				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
+				<div v-show="cfg.modes.showCfg" style="padding:0.5em">
+					Sorting:
+					<label v-for="(val, key) in {primeForm:'Prime form', mode:'Mode order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
+				</div>
+			</div>
+			<mode-switcher :labels="noteNames" :sortBy="cfg.modes.sortBy"/>
+		</div>
+
+		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Available Chords</h4>
-			<chords :labels="noteNames"/>
+			<chords :labels="cfg.global.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
 		</div>
 
 		<!-- Find a scale -->
-		<div style="display:inline-block">
+		<div>
 			<h4>Scale Finder</h4>
 			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
 			<div style="border:1px solid black; font-size:0.75em; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
