@@ -731,7 +731,65 @@ Vue.component('chords', {
 
 Vue.component('taylored-scale', {
 	data: function() {
-		var frets = [0, Math.floor(window.innerWidth / 64)];
+		var cfg = {
+			global: {showCfg:false},
+			guitar: {showCfg:false},
+			piano: {showCfg:false},
+			modes: {showCfg:false},
+			info: {showAliases:false},
+		};
+		var cookieList = [];
+
+		var val;
+
+		// Global
+		val = this.getCookie('cfg.global.colorscheme');
+		cfg.global.colorscheme = (val === null ? 'spectrum' : val);
+		cookieList.push('cfg.global.colorscheme');
+
+		val = this.getCookie('cfg.global.useRoman');
+		cfg.global.useRoman = (val === null ? false : (val=='true'));
+		cookieList.push('cfg.global.useRoman');
+
+		// Guitar
+		val = this.getCookie('cfg.guitar.width');
+		cfg.guitar.width = (val === null ? window.innerWidth : parseInt(val));
+		cookieList.push('cfg.guitar.width');
+
+		val = this.getCookie('cfg.guitar.height');
+		cfg.guitar.height = (val === null ? 200 : parseInt(val));
+		cookieList.push('cfg.guitar.height');
+
+		val = this.getCookie('cfg.guitar.startFret');
+		cfg.guitar.startFret = (val === null ? 0 : parseInt(val));
+		cookieList.push('cfg.guitar.startFret');
+
+		val = this.getCookie('cfg.guitar.endFret');
+		cfg.guitar.endFret = (val === null ? Math.floor(window.innerWidth/64) : parseInt(val));
+		cookieList.push('cfg.guitar.endFret');
+
+		// Piano
+		val = this.getCookie('cfg.piano.width');
+		cfg.piano.width = (val === null ? Math.max(400,window.innerWidth*0.5) : parseInt(val));
+		cookieList.push('cfg.piano.width');
+
+		val = this.getCookie('cfg.piano.height');
+		cfg.piano.height = (val === null ? 170 : parseInt(val));
+		cookieList.push('cfg.piano.height');
+
+		val = this.getCookie('cfg.piano.octaves');
+		cfg.piano.octaves = (val === null ? 2 : parseInt(val));
+		cookieList.push('cfg.piano.octaves');
+
+		val = this.getCookie('cfg.piano.colorWholeKey');
+		cfg.piano.colorWholeKey = (val === null ? true : (val=='true'));
+		cookieList.push('cfg.piano.colorWholeKey');
+
+		// Modes
+		val = this.getCookie('cfg.modes.sortBy');
+		cfg.modes.sortBy = (val === null ? 'primeForm' : val);
+		cookieList.push('cfg.modes.sortBy');
+
 
 		return {
 			allScaleNames: scaleNames,//.hack (other file)
@@ -746,13 +804,17 @@ Vue.component('taylored-scale', {
 					'hsl(180,90%,50%)', 'hsl(210,90%,50%)', 'hsl(240,90%,50%)', 'hsl(270,90%,50%)', 'hsl(300,90%,50%)', 'hsl(330,90%,50%)'
 				],
 				*/
-				rainbowHandpicked: [
+				spectrum: [
 					'hsl(0,100%,50%)', 'hsl(25,100%,50%)', 'hsl(45,100%,50%)', 'hsl(60,92%,50%)', 'hsl(77,100%,50%)', 'hsl(125,100%,50%)',
 					'hsl(180,100%,50%)', 'hsl(205,100%,50%)', 'hsl(240,100%,50%)', 'hsl(270,100%,50%)', 'hsl(292,100%,50%)', 'hsl(320,100%,50%)'
 				],
 				complimentary: [
 					'#ff0000', '#ff6600', '#ff9904', '#ffcc02', '#f6f600', '#66cc02',
 					'#049901', '#0db4c2', '#0151d4', '#660099', '#990099', '#cc0099'
+				],
+				tonicSeventh: [
+					'#e00', '#ace', '#ace', '#22b', '#24f', '#ace',
+					'#ace', '#0c0', '#ace', '#ace', '#d90', '#ec0'
 				],
 				/*
 				darkAccident: [
@@ -766,39 +828,8 @@ Vue.component('taylored-scale', {
 				*/
 			},
 			scaleSearch: null,
-			cfg: {
-				global: {
-					showCfg: false,
-					colorscheme: 'rainbowHandpicked',
-					useRoman: false,
-				},
-				guitar: {
-					showCfg: false,
-					width: window.innerWidth,
-					height: 200,
-					frets: frets,
-				},
-				piano: {
-					showCfg: false,
-					width: Math.max(400, window.innerWidth * 0.5),
-					height: 170,
-					octaves: 2,
-					colorWholeKey: true,
-				},
-				modes: {
-					showCfg: false,
-					sortBy: 'primeForm',
-				},
-				info: {
-					showAliases: false,
-				},
-			},
-			cookieList: [
-				'cfg.global.colorscheme', 'cfg.global.useRoman',
-				'cfg.guitar.width', 'cfg.guitar.height', 'cfg.guitar.frets',
-				'cfg.piano.width', 'cfg.piano.height', 'cfg.piano.octaves', 'cfg.piano.colorWholeKey',
-				'cfg.modes.sortBy',
-			],
+			cfg: cfg,
+			cookieList: cookieList,
 		};
 	},
 
@@ -814,11 +845,6 @@ Vue.component('taylored-scale', {
 		if(intervals) {
 			store.commit('setIntervals', intervals.split('').map(function(x){ return parseInt(x); }));
 		}
-
-		// Respect the cookie
-		//.set all from cookieList
-		var cs = this.getCookie('colorscheme');
-		if(cs) this.cfg.global.colorscheme = cs;
 	},
 
 	computed: {
@@ -920,45 +946,31 @@ Vue.component('taylored-scale', {
 			window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 		},
 
-		getCookie(cname) {
-			var name = cname + "=";
-			var decodedCookie = decodeURIComponent(document.cookie);
-			var ca = decodedCookie.split(';');
-			for(var i = 0; i <ca.length; i++) {
-				var c = ca[i];
-				while (c.charAt(0) == ' ') c = c.substring(1);
-				if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
+		getCookie(key) {
+			if(typeof(Storage) !== "undefined") {
+				var val = localStorage.getItem(key);
+				if(val !== null && val !== undefined) {
+					return val;
+				}
 			}
 			return null;
 		},
-		setCookie(cname, cvalue, expire) {
-			var cookie = cname + "=" + cvalue;
-			if(expire) {
-				cookie += "; expires=" + (new Date().getTime());
-			}
-			document.cookie = cookie;
-		},
-
-		loadCookies() {
-			for (var i = 0, len = this.cookieList.length; i < len; i++) {
-				var key = this.cookieList[i];
-				var val = this.getCookie(key);
-				if(val === "null") continue;//.
+		setCookie(key, val) {
+			if(typeof(Storage) !== "undefined") {
+				localStorage.setItem(key, val);
 			}
 		},
-		deleteCookies() {
-			if (confirm("Are you sure you want to reset all cookies?  This will erase all of your custom settings, including saved scales.")) {
-				for (var i = 0, len = this.cookieList.length; i < len; i++) {
-					this.setCookie(this.cookieList[i], null, true);
-				}
+		resetConfig() {
+			if(confirm("Are you sure you want to reset the configuration?  This will erase all of your custom settings and reload the page.")) {//.add "including saved scales"
+				localStorage.clear();
+				window.location.href = this.permLink;
 			}
 		},
 
 		keyAndScale: function() { return this.tonic + ' ' + this.scaleName; },
 
 		test() {
-			console.log('cookie', document.cookie);
-			//console.log(this.getCookie('_gid'));
+			console.log('cookie', localStorage);
 		},
 	},
 
@@ -969,19 +981,23 @@ Vue.component('taylored-scale', {
 		},
 
 		cookies: function(newval, oldval) {
-			for(key in newval) {
-				this.setCookie(key, newval[key]);
+			if(typeof(Storage) !== "undefined") {
+				for(key in newval) {
+					if(newval[key] !== oldval[key]) {
+						this.setCookie(key, newval[key]);
+					}
+				}
 			}
 		}
 	},
 
 	template: `<div>
-		<div v-if="1"><hr><button v-on:click="test">test</button>{{cookies}}</div>
+		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 
 		<div class="cfg-box">
 			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
 			<div v-show="cfg.global.showCfg" style="padding:0.5em">
-				<button v-on:click="deleteCookies()"><b>RESET COOKIES</b></button>
+				<button v-on:click="resetConfig()"><b>RESET CONFIG</b></button>
 				<br><br>
 				<label><input type="checkbox" v-model="cfg.global.useRoman"/> Use Roman Numerals</label>
 				<br>
@@ -1003,7 +1019,7 @@ Vue.component('taylored-scale', {
 			<div class="cfg-box">
 				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Guitar Config</button>
 				<div v-show="cfg.guitar.showCfg" style="padding:0.5em">
-					Frets: <input type="number" v-model="cfg.guitar.frets[0]" style="width:4em"/> to <input type="number" v-model="cfg.guitar.frets[1]" style="width:4em"/>
+					Frets: <input type="number" v-model="cfg.guitar.startFret" style="width:4em"/> to <input type="number" v-model="cfg.guitar.endFret" style="width:4em"/>
 					<br>
 					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.guitar.width += px">{{ (px>0 ? "+" : "") + px }}</button>
 					<br>
@@ -1016,7 +1032,7 @@ Vue.component('taylored-scale', {
 				:svgHeight="cfg.guitar.height"
 				:tonic="tonicIdx"
 				:intervals="intervals"
-				:frets="cfg.guitar.frets"
+				:frets="[cfg.guitar.startFret, cfg.guitar.endFret]"
 				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
 				:colors="colors"
 			/>
