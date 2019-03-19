@@ -459,9 +459,6 @@ Vue.component('note-wheel', {
 	props: {
 		size: {type: Number, required: true},
 		colors: Array,
-		circleOf: {
-			validator: function(value) { return [2,4,5].indexOf(value) !== -1; },
-			default: 2, // circle of 2nds (chromatic)
 		},
 	},
 
@@ -581,7 +578,7 @@ Vue.component('mode-switcher', {
 				modes.reverse(); // (prime form (darkest) last)
 			}
 
-			// by default sort by scale order
+			// by default sort by mode order
 			return modes;
 		},
 	},
@@ -995,7 +992,7 @@ Vue.component('taylored-scale', {
 
 		<br>
 
-		<div style="display:inline-block; margin:1em; max-width:30em;">
+		<div style="display:inline-block; margin:1em; max-width:20em;">
 			<h4><a :href="permLink">{{ keyAndScale() }}</a></h4>
 			<p style="font-size:0.8em">
 				<button v-show="scaleNames.length > 1" v-on:click="cfg.info.showAliases = !cfg.info.showAliases">
@@ -1010,7 +1007,7 @@ Vue.component('taylored-scale', {
 					</span>
 				</div>
 			</p>
-			<p style="font-size:0.8em; font-style:italic;">
+			<p style="font-size:0.8em">
 				Learn more about
 				<a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a>
 				at Ian Ring's website.
@@ -1022,7 +1019,7 @@ Vue.component('taylored-scale', {
 				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
 				<div v-show="cfg.modes.showCfg" style="padding:0.5em">
 					Sorting:
-					<label v-for="(val, key) in {primeForm:'Prime form', scale:'Scale order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
+					<label v-for="(val, key) in {primeForm:'Prime form', mode:'Mode order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
 				</div>
 			</div>
 			<mode-switcher :labels="noteNames" :sortBy="cfg.modes.sortBy"/>
