@@ -785,14 +785,20 @@ Vue.component('taylored-scale', {
 					octaves: 2,
 					colorWholeKey: true,
 				},
-				info: {
-					showAliases: false,
-				},
 				modes: {
 					showCfg: false,
 					sortBy: 'primeForm',
 				},
+				info: {
+					showAliases: false,
+				},
 			},
+			cookieList: [
+				'cfg.global.colorscheme', 'cfg.global.useRoman',
+				'cfg.guitar.width', 'cfg.guitar.height', 'cfg.guitar.frets',
+				'cfg.piano.width', 'cfg.piano.height', 'cfg.piano.octaves', 'cfg.piano.colorWholeKey',
+				'cfg.modes.sortBy',
+			],
 		};
 	},
 
@@ -810,6 +816,7 @@ Vue.component('taylored-scale', {
 		}
 
 		// Respect the cookie
+		//.set all from cookieList
 		var cs = this.getCookie('colorscheme');
 		if(cs) this.cfg.global.colorscheme = cs;
 	},
@@ -881,9 +888,17 @@ Vue.component('taylored-scale', {
 		},
 
 		cookies: function(){
-			return {
-				colorscheme: this.cfg.global.colorscheme,
-			};
+			var out = {};
+			for (var i = 0, len = this.cookieList.length; i < len; i++) {
+				var keyStr = this.cookieList[i];
+				var keyAry = keyStr.split('.');
+				var val = this;
+				for (var j = 0; j < keyAry.length; j++) {
+					val = val[keyAry[j]];
+				}
+				out[keyStr] = val;
+			}
+			return out;
 		},
 
 		tonicAndIntervals: function() { return [this.tonic, this.intervals]; },
@@ -911,22 +926,39 @@ Vue.component('taylored-scale', {
 			var ca = decodedCookie.split(';');
 			for(var i = 0; i <ca.length; i++) {
 				var c = ca[i];
-				while (c.charAt(0) == ' ') {
-					c = c.substring(1);
-				}
-				if (c.indexOf(name) == 0) {
-					return c.substring(name.length, c.length);
-				}
+				while (c.charAt(0) == ' ') c = c.substring(1);
+				if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
 			}
 			return null;
 		},
-		setCookie(cname, cvalue) { document.cookie = cname + "=" + cvalue; },
+		setCookie(cname, cvalue, expire) {
+			var cookie = cname + "=" + cvalue;
+			if(expire) {
+				cookie += "; expires=" + (new Date().getTime());
+			}
+			document.cookie = cookie;
+		},
+
+		loadCookies() {
+			for (var i = 0, len = this.cookieList.length; i < len; i++) {
+				var key = this.cookieList[i];
+				var val = this.getCookie(key);
+				if(val === "null") continue;//.
+			}
+		},
+		deleteCookies() {
+			if (confirm("Are you sure you want to reset all cookies?  This will erase all of your custom settings, including saved scales.")) {
+				for (var i = 0, len = this.cookieList.length; i < len; i++) {
+					this.setCookie(this.cookieList[i], null, true);
+				}
+			}
+		},
 
 		keyAndScale: function() { return this.tonic + ' ' + this.scaleName; },
 
 		test() {
 			console.log('cookie', document.cookie);
-			console.log(this.getCookie('_gid'));
+			//console.log(this.getCookie('_gid'));
 		},
 	},
 
@@ -944,11 +976,13 @@ Vue.component('taylored-scale', {
 	},
 
 	template: `<div>
-		<div v-if="1"><hr><button v-on:click="test">test</button></div>
+		<div v-if="1"><hr><button v-on:click="test">test</button>{{cookies}}</div>
 
 		<div class="cfg-box">
 			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
 			<div v-show="cfg.global.showCfg" style="padding:0.5em">
+				<button v-on:click="deleteCookies()"><b>RESET COOKIES</b></button>
+				<br><br>
 				<label><input type="checkbox" v-model="cfg.global.useRoman"/> Use Roman Numerals</label>
 				<br>
 				Colorscheme:
