@@ -620,12 +620,16 @@ Vue.component('mode-switcher', {
 			<tr v-for="(mode, i) in modes" style="font-size:0.8em">
 				<td>
 					Go to
-					<button v-on:click="goToParallel(i)" style="cursor:pointer" :disabled="wrappedIntervals[mode.relativeIdx] == tonic">
-						{{ labels[tonic] }}
-					</button>
-					<button v-on:click="goToRelative(i)" style="cursor:pointer" :disabled="wrappedIntervals[mode.relativeIdx] == tonic">
-						{{ labels[wrappedIntervals[mode.relativeIdx]] }}
-					</button>
+					<button
+						v-on:click="goToParallel(i)"
+						style='cursor: pointer; font-family: "Times New Roman", Times, serif;'
+						:disabled="wrappedIntervals[mode.relativeIdx] == tonic"
+					>{{ labels[tonic] }}</button>
+					<button
+						v-on:click="goToRelative(i)"
+						style='cursor: pointer; font-family: "Times New Roman", Times, serif;'
+						:disabled="wrappedIntervals[mode.relativeIdx] == tonic"
+					>{{ labels[wrappedIntervals[mode.relativeIdx]] }}</button>
 				</td>
 				<td>{{ mode.name }}</td>
 			</tr>
@@ -1105,7 +1109,7 @@ Vue.component('taylored-scale', {
 					<label v-for="(val, key) in {primeForm:'Prime form', mode:'Mode order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
 				</div>
 			</div>
-			<mode-switcher :labels="noteNames" :sortBy="cfg.modes.sortBy"/>
+			<mode-switcher :labels="cfg.global.useRoman ? romanNumerals : noteNames" :sortBy="cfg.modes.sortBy"/>
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
