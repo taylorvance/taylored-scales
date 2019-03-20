@@ -38,4 +38,5 @@ svg text {
 .note-dot text {
 	font-size: 0.75em;
 	fill: #fff;
+	text-shadow: 0 0 2px #333;
 }
