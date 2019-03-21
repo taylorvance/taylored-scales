@@ -747,55 +747,60 @@ Vue.component('taylored-scale', {
 		var val;
 
 		// Global
+		val = this.getCookie('cfg.global.useRoman');
+		cfg.global.useRoman = (val===null ? false : (val=='true'));
+		cookieList.push('cfg.global.useRoman');
+
 		val = this.getCookie('cfg.global.colorscheme');
-		cfg.global.colorscheme = (val === null ? 'spectrum' : val);
+		cfg.global.colorscheme = (val===null ? 'spectrum' : val);
 		cookieList.push('cfg.global.colorscheme');
 
-		val = this.getCookie('cfg.global.useRoman');
-		cfg.global.useRoman = (val === null ? false : (val=='true'));
-		cookieList.push('cfg.global.useRoman');
+		val = this.getCookie('cfg.global.customColors');
+		cfg.global.customColors = (val===null ? Array(12).fill('#aaccee') : JSON.parse(val));
+		cookieList.push('cfg.global.customColors');
 
 		// Guitar
 		val = this.getCookie('cfg.guitar.width');
-		cfg.guitar.width = (val === null ? window.innerWidth : parseInt(val));
+		cfg.guitar.width = (val===null ? window.innerWidth : parseInt(val));
 		cookieList.push('cfg.guitar.width');
 
 		val = this.getCookie('cfg.guitar.height');
-		cfg.guitar.height = (val === null ? 200 : parseInt(val));
+		cfg.guitar.height = (val===null ? 200 : parseInt(val));
 		cookieList.push('cfg.guitar.height');
 
 		val = this.getCookie('cfg.guitar.startFret');
-		cfg.guitar.startFret = (val === null ? 0 : parseInt(val));
+		cfg.guitar.startFret = (val===null ? 0 : parseInt(val));
 		cookieList.push('cfg.guitar.startFret');
 
 		val = this.getCookie('cfg.guitar.endFret');
-		cfg.guitar.endFret = (val === null ? Math.floor(window.innerWidth/64) : parseInt(val));
+		cfg.guitar.endFret = (val===null ? Math.floor(window.innerWidth/64) : parseInt(val));
 		cookieList.push('cfg.guitar.endFret');
 
 		// Piano
 		val = this.getCookie('cfg.piano.width');
-		cfg.piano.width = (val === null ? Math.max(400,window.innerWidth*0.5) : parseInt(val));
+		cfg.piano.width = (val===null ? Math.max(400,window.innerWidth*0.5) : parseInt(val));
 		cookieList.push('cfg.piano.width');
 
 		val = this.getCookie('cfg.piano.height');
-		cfg.piano.height = (val === null ? 170 : parseInt(val));
+		cfg.piano.height = (val===null ? 170 : parseInt(val));
 		cookieList.push('cfg.piano.height');
 
 		val = this.getCookie('cfg.piano.octaves');
-		cfg.piano.octaves = (val === null ? 2 : parseInt(val));
+		cfg.piano.octaves = (val===null ? 2 : parseInt(val));
 		cookieList.push('cfg.piano.octaves');
 
 		val = this.getCookie('cfg.piano.colorWholeKey');
-		cfg.piano.colorWholeKey = (val === null ? true : (val=='true'));
+		cfg.piano.colorWholeKey = (val===null ? true : (val=='true'));
 		cookieList.push('cfg.piano.colorWholeKey');
 
 		// Modes
 		val = this.getCookie('cfg.modes.sortBy');
-		cfg.modes.sortBy = (val === null ? 'primeForm' : val);
+		cfg.modes.sortBy = (val===null ? 'primeForm' : val);
 		cookieList.push('cfg.modes.sortBy');
 
 
 		return {
+			intervalSet: store.state.intervalSet,
 			allScaleNames: scaleNames,//.hack (other file)
 			colorschemes: {
 				/*
@@ -830,6 +835,7 @@ Vue.component('taylored-scale', {
 				whiteBlackKeys: ['#aaa', '#555', '#aaa', '#555', '#aaa', '#aaa', '#555', '#aaa', '#555', '#aaa', '#555', '#aaa'],
 				black: ['#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000'],
 				*/
+				custom: cfg.global.customColors,
 			},
 			scaleSearch: null,
 			cfg: cfg,
@@ -928,7 +934,7 @@ Vue.component('taylored-scale', {
 				}
 				out[keyStr] = val;
 			}
-			return out;
+			return JSON.parse(JSON.stringify(out));
 		},
 
 		tonicAndIntervals: function() { return [this.tonic, this.intervals]; },
@@ -961,6 +967,9 @@ Vue.component('taylored-scale', {
 		},
 		setCookie(key, val) {
 			if(typeof(Storage) !== "undefined") {
+				if(Array.isArray(val) || (typeof val === "object" && val !== null)) {
+					val = JSON.stringify(val);
+				}
 				localStorage.setItem(key, val);
 			}
 		},
@@ -974,7 +983,7 @@ Vue.component('taylored-scale', {
 		keyAndScale: function() { return this.tonic + ' ' + this.scaleName; },
 
 		test() {
-			console.log('cookie', localStorage);
+			//console.log('cookie', localStorage);
 		},
 	},
 
@@ -984,15 +993,19 @@ Vue.component('taylored-scale', {
 			document.title = 'Taylored Scales - ' + this.keyAndScale();
 		},
 
-		cookies: function(newval, oldval) {
-			if(typeof(Storage) !== "undefined") {
-				for(key in newval) {
-					if(newval[key] !== oldval[key]) {
-						this.setCookie(key, newval[key]);
+		cookies: {
+			deep: true,
+			handler: function(newval, oldval) {
+				if(typeof(Storage) !== "undefined") {
+					for(key in newval) {
+						if(newval[key] !== oldval[key]) {
+							//console.log('setting cookie', key, oldval[key], newval[key]);
+							this.setCookie(key, newval[key]);
+						}
 					}
 				}
-			}
-		}
+			},
+		},
 	},
 
 	template: `<div>
@@ -1007,12 +1020,25 @@ Vue.component('taylored-scale', {
 				<br>
 				Colorscheme:
 				<div style="padding-left:1em">
-					<div
-						v-for="(colors, key) in colorschemes"
-						v-on:click="cfg.global.colorscheme = key"
-						:style="'margin-bottom:3px; border:'+(cfg.global.colorscheme==key ? '3px solid #555' : '')+';'"
-					>
-						<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+					<br>
+					<div style="display:inline-block">
+						<div
+							v-for="(colors, key) in colorschemes"
+							v-on:click="cfg.global.colorscheme = key"
+							:style="'margin-bottom:3px; border:'+(cfg.global.colorscheme==key ? '3px solid #555' : '')+';'"
+						>
+							<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+						</div>
+					</div>
+					<div v-show="cfg.global.colorscheme == 'custom'">
+						Pick your custom colors:
+						<span v-for="(color, i) in cfg.global.customColors">
+							&nbsp;
+							<label>
+								{{ intervalSet[i].enharmonics[0] }}
+								<input type="color" v-model="cfg.global.customColors[i]" style="max-width:5em"/>
+							</label>
+						</span>
 					</div>
 				</div>
 			</div>
