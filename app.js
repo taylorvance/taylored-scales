@@ -148,7 +148,18 @@ Vue.component('note-dot', {
 		strokeWidth: {type: Number, default: 0},
 	},
 	computed: {
-		fontSize: function() { return this.r * 1.1; },
+		fontSize: function() {
+			var px = this.r * 1.2;
+			var over = this.effectiveWidth - 2;
+			if(over > 0) px -= (over * 3);
+			return px + 'px';
+		},
+		effectiveWidth: function() {
+			var width = this.label.length;
+			// "I"s only count for half
+			width -= ((this.label.match(/I/gi) || []).length / 2);
+			return width;
+		},
 	},
 	template: `<g class="note-dot">
 		<circle :cx="x" :cy="y" :r="r" :fill="color" stroke="black" :stroke-width="strokeWidth"/>
@@ -161,10 +172,7 @@ Vue.component('note-dot', {
 
 Vue.component('guitar', {
 	data: function() {
-		return {
-			x: 50,
-			y: 25,
-		};
+		return {x:50, y:25};
 	},
 
 	props: {
@@ -197,7 +205,7 @@ Vue.component('guitar', {
 		fretDistance: function() { return this.width / this.fretAry.length; },
 		stringDistance: function() { return this.height / (this.tuning.length - 1); },
 		noteOffset: function() { return this.fretDistance / 4; },
-		noteRadius: function() { return Math.min(this.fretDistance, this.stringDistance) / 3; },
+		noteRadius: function() { return Math.min(this.fretDistance, this.stringDistance) * 0.38; },
 		wrappedIdxs: function(){//.normalize this dup code
 			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
 			var wrapIdx = 12 - this.tonic;
@@ -1152,6 +1160,9 @@ Vue.component('taylored-scale', {
 					{{ scale.name }}
 				</div>
 			</div>
+			<i style="color:gray; font-size:0.8em;">
+				Scale list courtesy of Ian Ring's <a href="https://github.com/ianring/PHPMusicTools" target="_blank">PHPMusicTools</a>
+			</i>
 		</div>
 	</div>`
 });
