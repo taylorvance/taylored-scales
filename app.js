@@ -6,7 +6,8 @@ const store = new Vuex.Store({
 			['C'], ['C#','Db'], ['D'], ['D#','Eb'], ['E'], ['F'],
 			['F#','Gb'], ['G'], ['G#','Ab'], ['A'], ['A#','Bb'], ['B']
 		],
-		intervalSet: [
+		tonicEnharmShift: 0,
+		intervalSet: [ // default to Major scale
 			{enharmonics: ['P1'], on: true}, // removed d2 to make the note name algorithm easier
 			{enharmonics: ['m2','A1'], on: false},
 			{enharmonics: ['M2','d3'], on: true},
@@ -20,6 +21,7 @@ const store = new Vuex.Store({
 			{enharmonics: ['m7','A6'], on: false},
 			{enharmonics: ['M7','d8'], on: true},
 		],
+		intervalEnharmShift: [0,0,0,0,0,0,0,0,0,0,0,0],
 		pitchClasses: [
 			['B#','C','Dbb'], ['Bx','C#','Db'], ['Cx','D','Ebb'], ['D#','Eb','Fbb'], ['Dx','E','Fb'], ['E#','F','Gbb'],
 			['Ex','F#','Gb'], ['Fx','G','Abb'], ['G#','Ab'], ['Gx','A','Bbb'], ['A#','Bb','Cbb'], ['Ax','B','Cb']
@@ -31,6 +33,11 @@ const store = new Vuex.Store({
 			idx = parseInt(idx);
 			if(idx < 0) idx = 0;
 			state.tonicIdx = idx % state.intervalSet.length;
+
+			state.tonicEnharmShift = 0; // important, if somewhat hacky
+		},
+		enharmonicizeTonic(state) {
+			state.tonicEnharmShift = (state.tonicEnharmShift + 1) % state.tonicOptions[state.tonicIdx].length;
 		},
 
 		setIntervals(state, newIntervals) {
@@ -46,20 +53,33 @@ const store = new Vuex.Store({
 		toggleInterval(state, idx) {
 			state.intervalSet[idx].on = !state.intervalSet[idx].on;
 		},
-
 		enharmonicizeInterval(state, idx) {
-			state.intervalSet[idx].enharmonics.push(state.intervalSet[idx].enharmonics.shift());
-		},
-		enharmonicizeTonic(state, idx) {
-			state.tonicOptions[idx].push(state.tonicOptions[idx].shift());
+			var shift = (state.intervalEnharmShift[idx] + 1) % state.intervalSet[idx].enharmonics.length;
+			state.intervalEnharmShift.splice(idx, 1, shift);
 		},
 	},
 
 	getters: {
-		tonic: function(state) { return state.tonicOptions[state.tonicIdx][0]; },
+		tonic: function(state, getters) {
+			return getters.tonicOptions[state.tonicIdx];
+		},
+		tonicOptions: function(state) {
+			var opts = [];
+			for (var i = 0, len = state.tonicOptions.length; i < len; i++) {
+				var enharmIdx = (i === state.tonicIdx ? state.tonicEnharmShift : 0);
+				opts.push(state.tonicOptions[i][enharmIdx]);
+			}
+			return opts;
+		},
 
 		booleanIntervals: function(state) {
 			return state.intervalSet.map(function(interval){ return interval.on ? 1 : 0; });
+		},
+
+		intervalNames: function(state) {
+			return state.intervalSet.map(function(interval, i) {
+				return interval.enharmonics[state.intervalEnharmShift[i]];
+			});
 		},
 
 		noteNames: function(state, getters) {
@@ -70,7 +90,7 @@ const store = new Vuex.Store({
 			var tonicLetterIdx = allLetters.indexOf(tonicLetter);
 
 			state.intervalSet.forEach(function(interval, i) {
-				var number = parseInt(interval.enharmonics[0][1]);
+				var number = parseInt(interval.enharmonics[state.intervalEnharmShift[i]][1]);
 				var semitones = i;
 
 				var targetLetter = allLetters[tonicLetterIdx + number - 1];
@@ -105,7 +125,7 @@ const store = new Vuex.Store({
 			};
 
 			state.intervalSet.forEach(function(interval, i) {
-				numerals.push(intervalMap[interval.enharmonics[0]]);
+				numerals.push(intervalMap[interval.enharmonics[state.intervalEnharmShift[i]]]);
 			});
 
 			var wrapIdx = state.pitchClasses.length - state.tonicIdx;
@@ -403,7 +423,8 @@ Vue.component('scale-builder', {
 	},
 
 	computed: {
-		labels: function() { return store.state.intervalSet; },
+		intervalSet: function() { return store.state.intervalSet; },
+		labels: function() { return store.getters.intervalNames; },
 		buttonRadius: function(){ return this.width / 16; },
 		height: function(){ return this.buttonRadius * 7.5; },
 	},
@@ -413,7 +434,7 @@ Vue.component('scale-builder', {
 			var padding = this.buttonRadius;
 			var paddedWidth = this.width - 2 * padding;
 			var relX = i<5 ? i : i+1;
-			return padding + paddedWidth * relX / this.labels.length;
+			return padding + paddedWidth * relX / this.intervalSet.length;
 		},
 		intervalYoffset(i) {
 			if ([0,2,4,5,7,9,11].indexOf(i) !== -1) {
@@ -433,24 +454,24 @@ Vue.component('scale-builder', {
 	},
 
 	template: `<svg :width="width" :height="height">
-		<g v-for="(row, i) in labels" :key="row.id">
+		<g v-for="(interval, i) in intervalSet" :key="interval.id">
 			<note-dot
 				@click.native="toggleInterval(i)"
 				:x="intervalX(i)"
 				:y="height/2 + intervalYoffset(i)"
 				:r="buttonRadius"
-				:label="row.enharmonics[0]"
+				:label="labels[i]"
 				:color="fill(i)"
-				:opacity="row.on ? 1 : 0.25"
+				:opacity="interval.on ? 1 : 0.25"
 				style="cursor:pointer"
 			/>
 			<text
-				v-show="row.enharmonics.length > 1"
+				v-show="interval.enharmonics.length > 1"
 				v-on:click="enharmonicizeInterval(i)"
 				:x="intervalX(i)"
 				:y="height/2 + intervalYoffset(i) * 3"
 				:fill="fill(i)"
-				:opacity="row.on ? 1 : 0.25"
+				:opacity="interval.on ? 1 : 0.25"
 				style="dominant-baseline:middle; font-weight:bold; cursor:pointer;"
 			>↻</text>
 		</g>
@@ -470,7 +491,7 @@ Vue.component('note-wheel', {
 	},
 
 	computed: {
-		labels: function(){ return store.state.tonicOptions.map(function(row){ return row[0]; }); },
+		labels: function(){ return store.getters.tonicOptions; },
 		tonic: function(){ return store.state.tonicIdx; },
 		intervals: function() { return store.getters.booleanIntervals; },
 		width: function(){ return this.size; },
@@ -501,7 +522,7 @@ Vue.component('note-wheel', {
 
 		clickTonic(idx) {
 			if(this.tonic == idx) {
-				store.commit('enharmonicizeTonic', idx);
+				store.commit('enharmonicizeTonic');
 			} else {
 				store.commit('setTonic', idx);
 			}
@@ -808,7 +829,6 @@ Vue.component('taylored-scale', {
 
 
 		return {
-			intervalSet: store.state.intervalSet,
 			allScaleNames: scaleNames,//.hack (other file)
 			colorschemes: {
 				/*
@@ -853,15 +873,34 @@ Vue.component('taylored-scale', {
 
 	beforeMount: function() {
 		// Set tonic
-		var tonic = this.getParam('tonic');
-		if(tonic) {
-			store.commit('setTonic', tonic);
+		var gotTonic = this.getParam('tonic');
+		if(gotTonic) {
+			store.commit('setTonic', gotTonic);
+		}
+		// Set intervals
+		var gotIntervals = this.getParam('intervals');
+		if(gotIntervals) {
+			store.commit('setIntervals', gotIntervals.split('').map(function(x){ return parseInt(x); }));
 		}
 
-		// Calculate intervals
-		var intervals = this.getParam('intervals');
-		if(intervals) {
-			store.commit('setIntervals', intervals.split('').map(function(x){ return parseInt(x); }));
+		// Enharmonicize tonic if necessary
+		for (var i = 0, len = parseInt(this.getParam('tes')); i < len; i++) {
+			store.commit('enharmonicizeTonic');
+		}
+		// Enharmonicize intervals if necessary
+		var enharms = this.getParam('ies');
+		if(enharms) {
+			enharms = enharms.split('');
+			for (var intervalIdx = 0, len1 = enharms.length; intervalIdx < len1; intervalIdx++) {
+				for (var j = 0, len2 = parseInt(enharms[intervalIdx]); j < len2; j++) {
+					store.commit('enharmonicizeInterval', intervalIdx);
+				}
+			}
+		}
+
+		// Set tab title if tonic or intervals were in the params.
+		if(gotTonic || gotIntervals) {
+			document.title = 'Taylored Scales - ' + this.keyAndScale();
 		}
 	},
 
@@ -870,8 +909,10 @@ Vue.component('taylored-scale', {
 		height: function(){ return 200; },
 
 		tonicIdx: function(){ return store.state.tonicIdx; },
-		intervals: function() { return store.getters.booleanIntervals; },
 		tonic: function(){ return store.getters.tonic; },
+
+		intervals: function() { return store.getters.booleanIntervals; },
+		intervalNames: function() { return store.getters.intervalNames; },
 
 		colors: function(){ return this.colorschemes[this.cfg.global.colorscheme]; },
 
@@ -879,12 +920,18 @@ Vue.component('taylored-scale', {
 		romanNumerals: function() { return store.getters.romanNumerals; },
 
 		permLink: function(){
+			// NOTE: every param should have corresponding decode logic in beforeMount()
 			var url = window.location.href.split('?')[0];
 			url += '?';
 
-			// NOTE: Every param should have corresponding decode logic in beforeMount().
 			url += 'tonic='+this.tonicIdx;
 			url += '&intervals='+this.intervals.join('');
+
+			// if the tonic is shifted, add it
+			if(store.state.tonicEnharmShift > 0) url += '&tes='+store.state.tonicEnharmShift;
+			// if any interval shifts are non-zero, add them
+			var ies = store.state.intervalEnharmShift.join('');
+			if(ies !== Array(store.state.intervalEnharmShift.length).fill('0').join('')) url += '&ies='+ies;
 
 			return encodeURI(url);
 		},
@@ -944,8 +991,6 @@ Vue.component('taylored-scale', {
 			}
 			return JSON.parse(JSON.stringify(out));
 		},
-
-		tonicAndIntervals: function() { return [this.tonic, this.intervals]; },
 	},
 
 	methods: {
@@ -991,16 +1036,11 @@ Vue.component('taylored-scale', {
 		keyAndScale: function() { return this.tonic + ' ' + this.scaleName; },
 
 		test() {
-			//console.log('cookie', localStorage);
+			console.log('cookie', localStorage);
 		},
 	},
 
 	watch: {
-		tonicAndIntervals: function(newval, oldval) {
-			// Update document title
-			document.title = 'Taylored Scales - ' + this.keyAndScale();
-		},
-
 		cookies: {
 			deep: true,
 			handler: function(newval, oldval) {
@@ -1043,7 +1083,7 @@ Vue.component('taylored-scale', {
 						<span v-for="(color, i) in cfg.global.customColors">
 							&nbsp;
 							<label>
-								{{ intervalSet[i].enharmonics[0] }}
+								{{ intervalNames[i] }}
 								<input type="color" v-model="cfg.global.customColors[i]" style="max-width:5em"/>
 							</label>
 						</span>
