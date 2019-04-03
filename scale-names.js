@@ -127,6 +127,7 @@ var scaleNames = {
 	1321: ["Blues Minor","Raga Malkauns","Raga Malakosh","Raga Hindola","Man Gong","Quan Ming","Yi Ze","Jiao","Shegaye"],
 	1323: ["Ritsu","Raga Suddha Todi)"],
 	1331: ["Raga Vasantabhairavi"],
+	1335: ["Elephant"], // https://www.youtube.com/watch?v=f4eXdIlXZ7k
 	1353: ["Raga Harikauns","Chin"],
 	1355: ["Raga Bhavani"],
 	1357: ["Takemitsu Tree Line mode 2"],
@@ -141,6 +142,7 @@ var scaleNames = {
 	1417: ["Raga Shailaja","Varini"],
 	1419: ["Raga Kashyapi"],
 	1421: ["Raga Trimurti"],
+	1431: ["Gummy Bear"], // https://www.youtube.com/watch?v=yx_VdGFaPJk
 	1435: ["Makam Huzzam","Maqam Saba Zamzam","Phrygian Flat 4"],
 	1437: ["Sabach ascending"],
 	1443: ["Raga Phenadyuti","Insen","Honchoshi","Niagari"],
