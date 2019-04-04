@@ -2,6 +2,11 @@ body {
     font-family: "Trebuchet MS", Helvetica, sans-serif;
 }
 
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
 svg text {
 	dominant-baseline: central;
 	text-anchor: middle;

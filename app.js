@@ -790,7 +790,7 @@ Vue.component('taylored-scale', {
 
 		// Guitar
 		val = this.getCookie('cfg.guitar.width');
-		cfg.guitar.width = (val===null ? window.innerWidth : parseInt(val));
+		cfg.guitar.width = (val===null ? window.innerWidth*0.96 : parseInt(val));
 		cookieList.push('cfg.guitar.width');
 
 		val = this.getCookie('cfg.guitar.height');
@@ -807,11 +807,11 @@ Vue.component('taylored-scale', {
 
 		// Piano
 		val = this.getCookie('cfg.piano.width');
-		cfg.piano.width = (val===null ? Math.max(400,window.innerWidth*0.5) : parseInt(val));
+		cfg.piano.width = (val===null ? Math.max(300,window.innerWidth*0.5) : parseInt(val));
 		cookieList.push('cfg.piano.width');
 
 		val = this.getCookie('cfg.piano.height');
-		cfg.piano.height = (val===null ? 170 : parseInt(val));
+		cfg.piano.height = (val===null ? 150 : parseInt(val));
 		cookieList.push('cfg.piano.height');
 
 		val = this.getCookie('cfg.piano.octaves');
@@ -1059,6 +1059,7 @@ Vue.component('taylored-scale', {
 	template: `<div>
 		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 
+		<div>
 		<div class="cfg-box">
 			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
 			<div v-show="cfg.global.showCfg" style="padding:0.5em">
@@ -1091,32 +1092,33 @@ Vue.component('taylored-scale', {
 				</div>
 			</div>
 		</div>
-
-		<!-- Guitar -->
-		<div v-if="intervals">
-			<div class="cfg-box">
-				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Guitar Config</button>
-				<div v-show="cfg.guitar.showCfg" style="padding:0.5em">
-					Frets: <input type="number" v-model="cfg.guitar.startFret" style="width:4em"/> to <input type="number" v-model="cfg.guitar.endFret" style="width:4em"/>
-					<br>
-					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.guitar.width += px">{{ (px>0 ? "+" : "") + px }}</button>
-					<br>
-					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.guitar.height += px">{{ (px>0 ? "+" : "") + px }}</button>
-				</div>
-			</div>
-			<br>
-			<guitar
-				:svgWidth="cfg.guitar.width"
-				:svgHeight="cfg.guitar.height"
-				:tonic="tonicIdx"
-				:intervals="intervals"
-				:frets="[cfg.guitar.startFret, cfg.guitar.endFret]"
-				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
-				:colors="colors"
-			/>
 		</div>
 
-		<!-- Scale selection -->
+		<!-- Scale name -->
+		<div style="margin:1em">
+			<h2 style="margin-bottom:0.5em; white-space:nowrap;">{{ keyAndScale() }}</h2>
+			<p style="font-size:0.8em">
+				<button :disabled="scaleNames.length <= 1" v-on:click="cfg.info.showAliases = !cfg.info.showAliases">
+					other names for this scale
+				</button>
+				<div v-show="cfg.info.showAliases" style="font-size:0.8em">
+					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
+						{{ name }}
+						<span v-if="i != scaleNames.length - 1" style="white-space:normal">
+							&nbsp;&mdash;&nbsp;
+						</span>
+					</span>
+				</div>
+			</p>
+			<p style="font-size:0.7em">
+				Permanent* link: <a :href="permLink">{{ permLink }}</a>
+			</p>
+			<p style="font-size:0.8em">
+				<i>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> from Ian Ring</i>
+			</p>
+		</div>
+
+		<!-- Scale selector -->
 		<div style="display:inline-block; margin:1em;">
 			<scale-builder :width="height" :colors="colors"/>
 			<br><br>
@@ -1151,29 +1153,31 @@ Vue.component('taylored-scale', {
 			/>
 		</div>
 
-		<br>
-
-		<div style="display:inline-block; margin:1em; max-width:20em;">
-			<h4><a :href="permLink">{{ keyAndScale() }}</a></h4>
-			<p style="font-size:0.8em">
-				<button v-show="scaleNames.length > 1" v-on:click="cfg.info.showAliases = !cfg.info.showAliases">
-					other names
-				</button>
-				<div v-show="cfg.info.showAliases" style="font-size:0.8em">
-					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
-						{{ name }}
-						<span v-if="i != scaleNames.length - 1" style="white-space:normal">
-							&nbsp;&mdash;&nbsp;
-						</span>
-					</span>
+		<!-- Guitar -->
+		<div v-if="intervals">
+			<div class="cfg-box">
+				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Guitar Config</button>
+				<div v-show="cfg.guitar.showCfg" style="padding:0.5em">
+					Frets: <input type="number" v-model="cfg.guitar.startFret" style="width:4em"/> to <input type="number" v-model="cfg.guitar.endFret" style="width:4em"/>
+					<br>
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.guitar.width += px">{{ (px>0 ? "+" : "") + px }}</button>
+					<br>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.guitar.height += px">{{ (px>0 ? "+" : "") + px }}</button>
 				</div>
-			</p>
-			<p style="font-size:0.8em">
-				Learn more about
-				<a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a>
-				at Ian Ring's website.
-			</p>
+			</div>
+			<br>
+			<guitar
+				:svgWidth="cfg.guitar.width"
+				:svgHeight="cfg.guitar.height"
+				:tonic="tonicIdx"
+				:intervals="intervals"
+				:frets="[cfg.guitar.startFret, cfg.guitar.endFret]"
+				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
+				:colors="colors"
+			/>
 		</div>
+
+		<br>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<div class="cfg-box">
@@ -1195,13 +1199,13 @@ Vue.component('taylored-scale', {
 		<div>
 			<h4>Scale Finder</h4>
 			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
-			<div style="border:1px solid black; font-size:0.75em; height:200px; width:500px; overflow-y:scroll; font-family:'Lucida Console', Monaco, monospace;">
+			<div style="border:1px solid black; font-size:0.75em; height:200px; max-width:500px; overflow:scroll; font-family:'Lucida Console', Monaco, monospace;">
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
 					{{ scale.name }}
 				</div>
 			</div>
 			<i style="color:gray; font-size:0.8em;">
-				Scale list courtesy of Ian Ring's <a href="https://github.com/ianring/PHPMusicTools" target="_blank">PHPMusicTools</a>
+				Scale list (mostly) courtesy of Ian Ring's <a href="https://github.com/ianring/PHPMusicTools" target="_blank">PHPMusicTools</a>
 			</i>
 		</div>
 	</div>`
