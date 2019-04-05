@@ -670,6 +670,7 @@ Vue.component('mode-switcher', {
 Vue.component('chords', {
 	props: {
 		labels: Array,
+		showSus: {type: Boolean, default: false},
 	},
 
 	computed: {
@@ -691,9 +692,11 @@ Vue.component('chords', {
 				"m": [0,3,7],
 				"+": [0,4,8],
 				"º": [0,3,6],
-				//"sus": [0,5,7],
-				//"sus2": [0,2,7],
 			};
+			if(this.showSus) {
+				combos["sus"] = [0,5,7];
+				combos["sus2"] = [0,2,7];
+			}
 			// loop through every note, starting with the tonic
 			for (var i = this.tonic, len = this.tonic + this.intervals.length; i < len; i++) {
 				var rootIdx = i % this.intervals.length;
@@ -753,7 +756,7 @@ Vue.component('chords', {
 
 	template: `<div>
 		<div v-for="(sets, type) in chordGroups" style="display:inline-block; margin-left:1em; vertical-align:top;">
-			<h4>{{ type }}</h4>
+			<b>{{ type }}</b>
 			<div v-for="(chords, rootIdx) in chordGroups[type]">
 				<span v-for="chord in chords" style="margin-right:1.5em">{{ chord }}</span>
 			</div>
@@ -769,7 +772,8 @@ Vue.component('taylored-scale', {
 			guitar: {showCfg:false},
 			piano: {showCfg:false},
 			modes: {showCfg:false},
-			info: {showAliases:false},
+			chords: {showCfg:false},
+			misc: {showAliases:false},
 		};
 		var cookieList = [];
 
@@ -826,6 +830,11 @@ Vue.component('taylored-scale', {
 		val = this.getCookie('cfg.modes.sortBy');
 		cfg.modes.sortBy = (val===null ? 'primeForm' : val);
 		cookieList.push('cfg.modes.sortBy');
+
+		// Chords
+		val = this.getCookie('cfg.chords.showSus');
+		cfg.chords.showSus = (val===null ? false : (val=='true'));
+		cookieList.push('cfg.chords.showSus');
 
 
 		return {
@@ -1098,10 +1107,10 @@ Vue.component('taylored-scale', {
 		<div style="margin:1em">
 			<h2 style="margin-bottom:0.5em; white-space:nowrap;">{{ keyAndScale() }}</h2>
 			<p style="font-size:0.8em">
-				<button :disabled="scaleNames.length <= 1" v-on:click="cfg.info.showAliases = !cfg.info.showAliases">
+				<button :disabled="scaleNames.length <= 1" v-on:click="cfg.misc.showAliases = !cfg.misc.showAliases">
 					other names for this scale
 				</button>
-				<div v-show="cfg.info.showAliases" style="font-size:0.8em">
+				<div v-show="cfg.misc.showAliases" style="font-size:0.8em">
 					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
 						{{ name }}
 						<span v-if="i != scaleNames.length - 1" style="white-space:normal">
@@ -1191,12 +1200,17 @@ Vue.component('taylored-scale', {
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<h4>Available Chords</h4>
-			<chords :labels="cfg.global.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
+			<div class="cfg-box">
+				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chords Config</button>
+				<div v-show="cfg.chords.showCfg" style="padding:0.5em">
+					<label><input type="checkbox" v-model="cfg.chords.showSus"/> Show sus chords</label>
+				</div>
+			</div>
+			<chords :showSus="cfg.chords.showSus" :labels="cfg.global.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
 		</div>
 
 		<!-- Find a scale -->
-		<div>
+		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<h4>Scale Finder</h4>
 			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
 			<div style="border:1px solid black; font-size:0.75em; height:200px; max-width:500px; overflow:scroll; font-family:'Lucida Console', Monaco, monospace;">
