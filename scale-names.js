@@ -176,7 +176,7 @@ var scaleNames = {
 	1587: ["Raga Rudra Pancama"],
 	1589: ["Raga Rageshri","Raga Rageshwari","Nattaikurinji","Natakuranji"],
 	1619: ["Prometheus Neapolitan"],
-	1621: ["Prometheus (Scriabin)","Mystic","Raga Barbara)"],
+	1621: ["Prometheus (Scriabin)","Mystic","Raga Barbara"],
 	1643: ["Locrian natural 6","Maqam Tarznauyn",'Locrian Sharp 6'],
 	1645: ["Dorian flat 5","Blues Heptatonic","Makam Karcigar","Maqam Nahawand Murassah","Kiourdi ascending","Kartzihiar"],
 	1651: ["Asian","Asian (b)","Raga Ahira-Lalita","Hungarian Minor inverse","Tsinganikos"],
