@@ -1118,9 +1118,7 @@ Vue.component('taylored-scale', {
 				<div v-show="cfg.misc.showAliases" style="font-size:0.8em">
 					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
 						{{ name }}
-						<span v-if="i != scaleNames.length - 1" style="white-space:normal">
-							&nbsp;&mdash;&nbsp;
-						</span>
+						<b v-if="i != scaleNames.length - 1" style="color:#ccc; white-space:normal;">&nbsp;&mdash;&nbsp; </b>
 					</span>
 				</div>
 			</p>
