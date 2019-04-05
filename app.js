@@ -684,6 +684,7 @@ Vue.component('chords', {
 		},
 
 		chordGroups: function() {
+			//.normalize the loops below
 			var grps = {"Triads":{}, "Sevenths":{}};
 
 			// triads
@@ -773,6 +774,7 @@ Vue.component('taylored-scale', {
 			piano: {showCfg:false},
 			modes: {showCfg:false},
 			chords: {showCfg:false},
+			scales: {showCfg:false},
 			misc: {showAliases:false},
 		};
 		var cookieList = [];
@@ -835,6 +837,11 @@ Vue.component('taylored-scale', {
 		val = this.getCookie('cfg.chords.showSus');
 		cfg.chords.showSus = (val===null ? false : (val=='true'));
 		cookieList.push('cfg.chords.showSus');
+
+		// Scales
+		val = this.getCookie('cfg.scales.showAlias');
+		cfg.scales.showAlias = (val===null ? false : (val=='true'));
+		cookieList.push('cfg.scales.showAlias');
 
 
 		return {
@@ -963,15 +970,13 @@ Vue.component('taylored-scale', {
 			var all = [];
 			for (num in this.allScaleNames) {
 				for (i in this.allScaleNames[num]) {
-					all.push({num: num, name: this.allScaleNames[num][i]});
+					var scale = {num: num, name: this.allScaleNames[num][i]};
+					if(i != 0) scale.alias = this.allScaleNames[num][0];
+					all.push(scale);
 				}
 			}
 			return all.sort(function(a,b){
-				if(a.name < b.name) {
-					return -1;
-				} else {
-					return (a.name > b.name) ? 1 : 0;
-				}
+				return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
 			});
 		},
 
@@ -1211,11 +1216,21 @@ Vue.component('taylored-scale', {
 
 		<!-- Find a scale -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<h4>Scale Finder</h4>
+			<div>
+			<div class="cfg-box">
+				<button v-on:click="cfg.scales.showCfg = !cfg.scales.showCfg">Scale Finder Config</button>
+				<div v-show="cfg.scales.showCfg" style="padding:0.5em">
+					<label><input type="checkbox" v-model="cfg.scales.showAlias"/> Show alias</label>
+				</div>
+			</div>
+			</div>
 			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
-			<div style="border:1px solid black; font-size:0.75em; height:200px; max-width:500px; overflow:scroll; font-family:'Lucida Console', Monaco, monospace;">
+			<div style="border:1px solid black; font-size:0.75em; height:200px; overflow:scroll; font-family:'Lucida Console', Monaco, monospace;">
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
-					{{ scale.name }}
+					<span style="white-space:nowrap">{{ scale.name }}</span>
+					<i v-show="cfg.scales.showAlias && scale.alias" style="color:#aaa; display:inline-block; margin-left:0.5em; white-space:nowrap;">
+						(aka {{ scale.alias }})
+					</i>
 				</div>
 			</div>
 			<i style="color:gray; font-size:0.8em;">
