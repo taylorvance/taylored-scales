@@ -1073,40 +1073,65 @@ Vue.component('taylored-scale', {
 	template: `<div>
 		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 
-		<div>
 		<div class="cfg-box">
-			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
+			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Config</button>
 			<div v-show="cfg.global.showCfg" style="padding:0.5em">
-				<button v-on:click="resetConfig()"><b>RESET CONFIG</b></button>
-				<br><br>
-				<label><input type="checkbox" v-model="cfg.global.useRoman"/> Use Roman Numerals</label>
+				<button v-on:click="resetConfig()"><b style="color:red">RESET CONFIG</b></button>
 				<br>
-				Colorscheme:
-				<div style="padding-left:1em">
+
+				<div class="cfg-section">
+					<h4>General</h4>
+					<label><input type="checkbox" v-model="cfg.global.useRoman"/> Use Roman Numerals</label>
 					<br>
-					<div style="display:inline-block">
-						<div
-							v-for="(colors, key) in colorschemes"
-							v-on:click="cfg.global.colorscheme = key"
-							:style="'margin-bottom:3px; border:'+(cfg.global.colorscheme==key ? '3px solid #555' : '')+';'"
-						>
-							<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+					Colorscheme:
+					<div style="padding-left:1em">
+						<br>
+						<div style="display:inline-block">
+							<div
+								v-for="(colors, key) in colorschemes"
+								v-on:click="cfg.global.colorscheme = key"
+								:style="'margin-bottom:3px; border:'+(cfg.global.colorscheme==key ? '3px solid #555' : '')+';'"
+							>
+								<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+							</div>
+						</div>
+						<div v-show="cfg.global.colorscheme == 'custom'">
+							Pick your custom colors:
+							<span v-for="(color, i) in cfg.global.customColors">
+								&nbsp;
+								<label>
+									{{ intervalNames[i] }}
+									<input type="color" v-model="cfg.global.customColors[i]" style="max-width:5em"/>
+								</label>
+							</span>
 						</div>
 					</div>
-					<div v-show="cfg.global.colorscheme == 'custom'">
-						Pick your custom colors:
-						<span v-for="(color, i) in cfg.global.customColors">
-							&nbsp;
-							<label>
-								{{ intervalNames[i] }}
-								<input type="color" v-model="cfg.global.customColors[i]" style="max-width:5em"/>
-							</label>
-						</span>
+				</div>
+
+				<div class="cfg-section">
+					<h4>Keyboard</h4>
+					<div style="padding:0.5em">
+						Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.piano.width += px">{{ (px>0 ? "+" : "") + px }}</button>
+						<br>
+						Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.piano.height += px">{{ (px>0 ? "+" : "") + px }}</button>
+						<br>
+						Octaves: 
+						<label v-for="num in [1,2,3,4]">&nbsp;<input type="radio" :value="num" v-model="cfg.piano.octaves"/> {{ num }} </label>
+						<br>
+						<label><input type="checkbox" v-model="cfg.piano.colorWholeKey"/> Color whole key</label>
 					</div>
+				</div>
+				<div class="cfg-section">
+					<h4>Fretboard</h4>
+					Frets: <input type="number" v-model="cfg.guitar.startFret" style="width:4em"/> to <input type="number" v-model="cfg.guitar.endFret" style="width:4em"/>
+					<br>
+					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.guitar.width += px">{{ (px>0 ? "+" : "") + px }}</button>
+					<br>
+					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.guitar.height += px">{{ (px>0 ? "+" : "") + px }}</button>
 				</div>
 			</div>
 		</div>
-		</div>
+		<br>
 
 		<!-- Scale name -->
 		<div style="margin:1em">
@@ -1139,20 +1164,6 @@ Vue.component('taylored-scale', {
 
 		<!-- Piano -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<div class="cfg-box">
-				<button v-on:click="cfg.piano.showCfg = !cfg.piano.showCfg">Piano Config</button>
-				<div v-show="cfg.piano.showCfg" style="padding:0.5em">
-					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.piano.width += px">{{ (px>0 ? "+" : "") + px }}</button>
-					<br>
-					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.piano.height += px">{{ (px>0 ? "+" : "") + px }}</button>
-					<br>
-					Octaves: 
-					<label v-for="num in [1,2,3,4]">&nbsp;<input type="radio" :value="num" v-model="cfg.piano.octaves"/> {{ num }} </label>
-					<br>
-					<label><input type="checkbox" v-model="cfg.piano.colorWholeKey"/> Color whole key</label>
-				</div>
-			</div>
-			<br>
 			<piano
 				:x="0"
 				:y="0"
@@ -1167,17 +1178,6 @@ Vue.component('taylored-scale', {
 
 		<!-- Guitar -->
 		<div v-if="intervals">
-			<div class="cfg-box">
-				<button v-on:click="cfg.guitar.showCfg = !cfg.guitar.showCfg">Guitar Config</button>
-				<div v-show="cfg.guitar.showCfg" style="padding:0.5em">
-					Frets: <input type="number" v-model="cfg.guitar.startFret" style="width:4em"/> to <input type="number" v-model="cfg.guitar.endFret" style="width:4em"/>
-					<br>
-					Width: <button v-for="px in [-100,-50,-10,10,50,100]" v-on:click="cfg.guitar.width += px">{{ (px>0 ? "+" : "") + px }}</button>
-					<br>
-					Height: <button v-for="px in [-50,-20,-10,10,20,50]" v-on:click="cfg.guitar.height += px">{{ (px>0 ? "+" : "") + px }}</button>
-				</div>
-			</div>
-			<br>
 			<guitar
 				:svgWidth="cfg.guitar.width"
 				:svgHeight="cfg.guitar.height"
