@@ -554,7 +554,7 @@ Vue.component('note-wheel', {
 Vue.component('mode-switcher', {
 	props: {
 		labels: Array,
-		sortBy: {type: String, default: 'primeForm'},//.enum this
+		sortBy: {type: String, default: 'mode'},//.enum this. ['primeForm', 'modes']
 	},
 
 	computed: {
@@ -830,7 +830,7 @@ Vue.component('taylored-scale', {
 
 		// Modes
 		val = this.getCookie('cfg.modes.sortBy');
-		cfg.modes.sortBy = (val===null ? 'primeForm' : val);
+		cfg.modes.sortBy = (val===null ? 'mode' : val);
 		cookieList.push('cfg.modes.sortBy');
 
 		// Chords
@@ -1196,7 +1196,9 @@ Vue.component('taylored-scale', {
 				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
 				<div v-show="cfg.modes.showCfg" style="padding:0.5em">
 					Sorting:
-					<label v-for="(val, key) in {primeForm:'Prime form', mode:'Mode order'}">&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/> {{ val }} </label>
+					<label v-for="(val, key) in {mode:'Mode order', primeForm:'Prime form'}" style="white-space:nowrap">
+						&nbsp;<input type="radio" :value="key" v-model="cfg.modes.sortBy"/>&nbsp;{{ val }}
+					</label>
 				</div>
 			</div>
 			<mode-switcher :labels="cfg.global.useRoman ? romanNumerals : noteNames" :sortBy="cfg.modes.sortBy"/>
@@ -1204,7 +1206,7 @@ Vue.component('taylored-scale', {
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<div class="cfg-box">
-				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chords Config</button>
+				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chord Viewer Config</button>
 				<div v-show="cfg.chords.showCfg" style="padding:0.5em">
 					<label><input type="checkbox" v-model="cfg.chords.showSus"/> Show sus chords</label>
 				</div>
