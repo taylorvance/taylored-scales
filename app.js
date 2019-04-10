@@ -794,6 +794,10 @@ Vue.component('taylored-scale', {
 		cfg.global.customColors = (val===null ? Array(12).fill('#aaccee') : JSON.parse(val));
 		cookieList.push('cfg.global.customColors');
 
+		val = this.getCookie('cfg.global.useShortURL');
+		cfg.global.useShortURL = (val===null ? true : (val=='true'));
+		cookieList.push('cfg.global.useShortURL');
+
 		// Guitar
 		val = this.getCookie('cfg.guitar.width');
 		cfg.guitar.width = (val===null ? window.innerWidth*0.96 : parseInt(val));
@@ -889,22 +893,33 @@ Vue.component('taylored-scale', {
 
 	beforeMount: function() {
 		// Set tonic
-		var gotTonic = this.getParam('tonic');
+		var gotTonic = this.getParam('tonic') || this.getParam('t');
 		if(gotTonic) {
 			store.commit('setTonic', gotTonic);
 		}
+
 		// Set intervals
 		var gotIntervals = this.getParam('intervals');
+		if(!gotIntervals) {
+			// try the shorter hex-based version
+			gotIntervals = this.getParam('i');
+			if(gotIntervals) gotIntervals = parseInt(gotIntervals, 16).toString(2);
+		}
 		if(gotIntervals) {
 			store.commit('setIntervals', gotIntervals.split('').map(function(x){ return parseInt(x); }));
 		}
 
 		// Enharmonicize tonic if necessary
-		for (var i = 0, len = parseInt(this.getParam('tes')); i < len; i++) {
+		for (var i = 0, len = parseInt(this.getParam('ts')); i < len; i++) {
 			store.commit('enharmonicizeTonic');
 		}
+
 		// Enharmonicize intervals if necessary
-		var enharms = this.getParam('ies');
+		var enharms = this.getParam('is');
+		if(enharms && enharms.length < 12) {
+			// parse the shorter hex-based version
+			enharms = parseInt(enharms, 16).toString(2).padStart(12, '0');
+		}
 		if(enharms) {
 			enharms = enharms.split('');
 			for (var intervalIdx = 0, len1 = enharms.length; intervalIdx < len1; intervalIdx++) {
@@ -940,14 +955,29 @@ Vue.component('taylored-scale', {
 			var url = window.location.href.split('?')[0];
 			url += '?';
 
-			url += 'tonic='+this.tonicIdx;
-			url += '&intervals='+this.intervals.join('');
+			if(this.cfg.global.useShortURL) {
+				url += 't=' + this.tonicIdx;
+				url += '&i=' + parseInt(this.intervals.join(''), 2).toString(16);
+			} else {
+				url += 'tonic=' + this.tonicIdx;
+				url += '&intervals=' + this.intervals.join('');
+			}
 
 			// if the tonic is shifted, add it
-			if(store.state.tonicEnharmShift > 0) url += '&tes='+store.state.tonicEnharmShift;
+			if(store.state.tonicEnharmShift > 0) {
+				url += '&ts=' + store.state.tonicEnharmShift;
+			}
+
 			// if any interval shifts are non-zero, add them
-			var ies = store.state.intervalEnharmShift.join('');
-			if(ies !== Array(store.state.intervalEnharmShift.length).fill('0').join('')) url += '&ies='+ies;
+			var is = store.state.intervalEnharmShift.join('');
+			var zeroes = Array(store.state.intervalEnharmShift.length).fill('0').join('');
+			if(is !== zeroes) {
+				if(this.cfg.global.useShortURL) {
+					url += '&is=' + parseInt(is, 2).toString(16);
+				} else {
+					url += '&is=' + is;
+				}
+			}
 
 			return encodeURI(url);
 		},
@@ -1123,7 +1153,9 @@ Vue.component('taylored-scale', {
 				</div>
 			</p>
 			<p style="font-size:0.7em">
-				Permanent* link: <a :href="permLink">{{ permLink }}</a>
+				Permanent* link
+				<span v-on:click="cfg.global.useShortURL = !cfg.global.useShortURL" style="cursor:pointer; font-size:1.5em;">↻</span>
+				<a :href="permLink">{{ permLink }}</a>
 			</p>
 			<p style="font-size:0.8em">
 				<i>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> from Ian Ring</i>
