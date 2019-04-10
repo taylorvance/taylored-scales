@@ -250,7 +250,7 @@ Vue.component('guitar', {
 			<!-- Fret markers -->
 			<rect
 				v-for="(fret, i) in fretAry"
-				v-if="i > 0 && [3,5,7,9,12,15,17,19,21,23,25,27].includes(fret)"
+				v-if="i > 0 && [0,3,5,7,9].includes(fret % 12)"
 				:x="fretX(i) - 2*fretDistance/3"
 				:y="stringY(tuning.length) + stringDistance/2"
 				:width="fretDistance/3"
@@ -310,7 +310,7 @@ Vue.component('piano', {
 		blackHeight: function() { return this.height * 0.6; },
 		whiteKeys: function() {
 			var whites = [];
-			for (var i = 0, len = this.octaves * 12 + 1; i < len; i++) {
+			for (var i = 0, len = this.octaves * 12; i < len; i++) {
 				var interval = i % 12;
 				if([0,2,4,5,7,9,11].includes(interval)) {
 					whites.push(interval);
@@ -456,17 +456,17 @@ Vue.component('scale-builder', {
 	template: `<svg :width="width" :height="height">
 		<g v-for="(interval, i) in intervalSet" :key="interval.id">
 			<note-dot
-				@click.native="toggleInterval(i)"
+				@click.native="i>0 && toggleInterval(i)"
 				:x="intervalX(i)"
 				:y="height/2 + intervalYoffset(i)"
 				:r="buttonRadius"
 				:label="labels[i]"
 				:color="fill(i)"
 				:opacity="interval.on ? 1 : 0.25"
-				style="cursor:pointer"
+				:style="i>0 ? 'cursor:pointer' : ''"
 			/>
 			<text
-				v-show="interval.enharmonics.length > 1"
+				v-if="interval.enharmonics.length > 1"
 				v-on:click="enharmonicizeInterval(i)"
 				:x="intervalX(i)"
 				:y="height/2 + intervalYoffset(i) * 3"
@@ -620,7 +620,7 @@ Vue.component('mode-switcher', {
 		scaleName: function(ianRingNum) {
 			var names = scaleNames[ianRingNum];//.hack (other file)
 			if(names === undefined) {
-				return 'Scale #' + ianRingNum;
+				return '['+ianRingNum+']';
 			} else {
 				return names[0];
 			}
@@ -916,7 +916,7 @@ Vue.component('taylored-scale', {
 
 		// Set tab title if tonic or intervals were in the params.
 		if(gotTonic || gotIntervals) {
-			document.title = 'Taylored Scales - ' + this.keyAndScale();
+			document.title = this.keyAndScale();
 		}
 	},
 
@@ -962,7 +962,7 @@ Vue.component('taylored-scale', {
 		},
 		scaleName: function(){
 			var names = this.scaleNames;
-			if(!names || !names[0]) return "#"+this.ianRingNumber;
+			if(!names || !names[0]) return '['+this.ianRingNumber+']';
 			else return names[0];
 		},
 
