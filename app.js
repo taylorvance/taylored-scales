@@ -49,9 +49,11 @@ const store = new Vuex.Store({
 			for (var i = 0, len = newIntervals.length; i < len; i++) {
 				state.intervalSet[i].on = Boolean(newIntervals[i]);
 			}
+			state.intervalSet[0].on = true; // root must stay on
 		},
 		toggleInterval(state, idx) {
 			state.intervalSet[idx].on = !state.intervalSet[idx].on;
+			state.intervalSet[0].on = true; // root must stay on
 		},
 		enharmonicizeInterval(state, idx) {
 			var shift = (state.intervalEnharmShift[idx] + 1) % state.intervalSet[idx].enharmonics.length;
@@ -769,7 +771,7 @@ Vue.component('chords', {
 Vue.component('taylored-scale', {
 	data: function() {
 		var cfg = {
-			global: {showCfg:false},
+			general: {showCfg:false},
 			guitar: {showCfg:false},
 			piano: {showCfg:false},
 			modes: {showCfg:false},
@@ -781,22 +783,23 @@ Vue.component('taylored-scale', {
 
 		var val;
 
-		// Global
-		val = this.getCookie('cfg.global.useRoman');
-		cfg.global.useRoman = (val===null ? false : (val=='true'));
-		cookieList.push('cfg.global.useRoman');
+		// General
+		val = this.getCookie('cfg.general.useRoman');
+		cfg.general.useRoman = (val===null ? false : (val=='true'));
+		cookieList.push('cfg.general.useRoman');
 
-		val = this.getCookie('cfg.global.colorscheme');
-		cfg.global.colorscheme = (val===null ? 'spectrum' : val);
-		cookieList.push('cfg.global.colorscheme');
+		val = this.getCookie('cfg.general.colorscheme');
+		cfg.general.colorscheme = (val===null ? 'spectrum' : val);
+		cookieList.push('cfg.general.colorscheme');
 
-		val = this.getCookie('cfg.global.customColors');
-		cfg.global.customColors = (val===null ? Array(12).fill('#aaccee') : JSON.parse(val));
-		cookieList.push('cfg.global.customColors');
+		val = this.getCookie('cfg.general.customColors');
+		cfg.general.customColors = (val===null ? Array(12).fill('#aaccee') : JSON.parse(val));
+		cookieList.push('cfg.general.customColors');
 
-		val = this.getCookie('cfg.global.useShortURL');
-		cfg.global.useShortURL = (val===null ? true : (val=='true'));
-		cookieList.push('cfg.global.useShortURL');
+		val = this.getCookie('cfg.general.useShortURL');
+		//.I kinda wanna use short by default but I'll leave it long for now just in case I change how it works.
+		cfg.general.useShortURL = (val===null ? false : (val=='true'));
+		cookieList.push('cfg.general.useShortURL');
 
 		// Guitar
 		val = this.getCookie('cfg.guitar.width');
@@ -883,7 +886,7 @@ Vue.component('taylored-scale', {
 				whiteBlackKeys: ['#aaa', '#555', '#aaa', '#555', '#aaa', '#aaa', '#555', '#aaa', '#555', '#aaa', '#555', '#aaa'],
 				black: ['#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000', '#000'],
 				*/
-				custom: cfg.global.customColors,
+				custom: cfg.general.customColors,
 			},
 			scaleSearch: null,
 			cfg: cfg,
@@ -945,7 +948,7 @@ Vue.component('taylored-scale', {
 		intervals: function() { return store.getters.booleanIntervals; },
 		intervalNames: function() { return store.getters.intervalNames; },
 
-		colors: function(){ return this.colorschemes[this.cfg.global.colorscheme]; },
+		colors: function(){ return this.colorschemes[this.cfg.general.colorscheme]; },
 
 		noteNames: function() { return store.getters.noteNames; },
 		romanNumerals: function() { return store.getters.romanNumerals; },
@@ -955,9 +958,9 @@ Vue.component('taylored-scale', {
 			var url = window.location.href.split('?')[0];
 			url += '?';
 
-			if(this.cfg.global.useShortURL) {
+			if(this.cfg.general.useShortURL) {
 				url += 't=' + this.tonicIdx;
-				url += '&i=' + parseInt(this.intervals.join(''), 2).toString(16);
+				url += '&i=' + this.hexNumber;
 			} else {
 				url += 'tonic=' + this.tonicIdx;
 				url += '&intervals=' + this.intervals.join('');
@@ -972,7 +975,7 @@ Vue.component('taylored-scale', {
 			var is = store.state.intervalEnharmShift.join('');
 			var zeroes = Array(store.state.intervalEnharmShift.length).fill('0').join('');
 			if(is !== zeroes) {
-				if(this.cfg.global.useShortURL) {
+				if(this.cfg.general.useShortURL) {
 					url += '&is=' + parseInt(is, 2).toString(16);
 				} else {
 					url += '&is=' + is;
@@ -1075,7 +1078,9 @@ Vue.component('taylored-scale', {
 			}
 		},
 		resetConfig() {
-			if(confirm("Are you sure you want to reset the configuration?  This will erase all of your custom settings and reload the page.")) {//.add "including saved scales"
+			//.add something about saved scales and colorschemes
+			var txt = "Are you sure? This will delete all of your custom settings and reload the page.";
+			if(confirm(txt)) {
 				localStorage.clear();
 				window.location.href = this.permLink;
 			}
@@ -1109,10 +1114,10 @@ Vue.component('taylored-scale', {
 
 		<!-- Scale name -->
 		<div>
-			<h1 style="margin-bottom:0.5em; white-space:nowrap;">{{ keyAndScale() }}</h1>
+			<h1 style="margin-bottom:0.25em; white-space:nowrap;">{{ keyAndScale() }}</h1>
 			<p style="font-size:0.8em">
 				<button :disabled="scaleNames.length <= 1" v-on:click="cfg.misc.showAliases = !cfg.misc.showAliases">
-					other names for this scale
+					aka
 				</button>
 				<div v-show="cfg.misc.showAliases" style="font-size:0.8em">
 					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
@@ -1122,7 +1127,9 @@ Vue.component('taylored-scale', {
 				</div>
 			</p>
 			<p style="font-size:0.7em">
-				Permanent* link: <a :href="permLink">{{ permLink }}</a>
+				Permanent* link
+				<button v-on:click="cfg.general.useShortURL = !cfg.general.useShortURL">{{ cfg.general.useShortURL ? 'lengthen' : 'shorten' }}</button>
+				<a :href="permLink" style="white-space:nowrap">{{ permLink }}</a>
 			</p>
 			<p style="font-size:0.8em">
 				<i>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> from Ian Ring</i>
@@ -1131,11 +1138,11 @@ Vue.component('taylored-scale', {
 
 		<div>
 		<div class="cfg-box">
-			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
-			<div v-show="cfg.global.showCfg" style="padding:0.5em">
-				<button v-on:click="resetConfig()"><b>RESET CONFIG</b></button>
+			<button v-on:click="cfg.general.showCfg = !cfg.general.showCfg">General Config</button>
+			<div v-show="cfg.general.showCfg" style="padding:0.5em">
+				<button v-on:click="resetConfig()" style="border-color:red; padding:0.3em;"><b>RESET ALL SETTINGS</b></button>
 				<br><br>
-				<label><input type="checkbox" v-model="cfg.global.useRoman"/> Use Roman Numerals</label>
+				<label><input type="checkbox" v-model="cfg.general.useRoman"/> Use Roman Numerals</label>
 				<br>
 				Colorscheme:
 				<div style="padding-left:1em">
@@ -1143,19 +1150,19 @@ Vue.component('taylored-scale', {
 					<div style="display:inline-block">
 						<div
 							v-for="(colors, key) in colorschemes"
-							v-on:click="cfg.global.colorscheme = key"
-							:style="'margin-bottom:3px; border:'+(cfg.global.colorscheme==key ? '3px solid #555' : '')+';'"
+							v-on:click="cfg.general.colorscheme = key"
+							:style="'margin-bottom:3px; border:'+(cfg.general.colorscheme==key ? '3px solid #555' : '')+';'"
 						>
 							<span v-for="color in colors" :style="'background-color:'+color">&nbsp;&nbsp;&nbsp;&nbsp;</span>
 						</div>
 					</div>
-					<div v-show="cfg.global.colorscheme == 'custom'">
+					<div v-show="cfg.general.colorscheme == 'custom'">
 						Pick your custom colors:
-						<span v-for="(color, i) in cfg.global.customColors">
+						<span v-for="(color, i) in cfg.general.customColors">
 							&nbsp;
 							<label>
 								{{ intervalNames[i] }}
-								<input type="color" v-model="cfg.global.customColors[i]" style="max-width:5em"/>
+								<input type="color" v-model="cfg.general.customColors[i]" style="max-width:5em"/>
 							</label>
 						</span>
 					</div>
@@ -1192,7 +1199,7 @@ Vue.component('taylored-scale', {
 				:y="0"
 				:svgWidth="cfg.piano.width"
 				:svgHeight="cfg.piano.height"
-				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
+				:labels="cfg.general.useRoman ? romanNumerals : noteNames"
 				:colors="colors"
 				:colorWholeKey="cfg.piano.colorWholeKey"
 				:octaves="cfg.piano.octaves"
@@ -1218,7 +1225,7 @@ Vue.component('taylored-scale', {
 				:tonic="tonicIdx"
 				:intervals="intervals"
 				:frets="[cfg.guitar.startFret, cfg.guitar.endFret]"
-				:labels="cfg.global.useRoman ? romanNumerals : noteNames"
+				:labels="cfg.general.useRoman ? romanNumerals : noteNames"
 				:colors="colors"
 			/>
 		</div>
@@ -1236,7 +1243,7 @@ Vue.component('taylored-scale', {
 					</label>
 				</div>
 			</div>
-			<mode-switcher :labels="cfg.global.useRoman ? romanNumerals : noteNames" :sortBy="cfg.modes.sortBy"/>
+			<mode-switcher :labels="cfg.general.useRoman ? romanNumerals : noteNames" :sortBy="cfg.modes.sortBy"/>
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
@@ -1246,7 +1253,7 @@ Vue.component('taylored-scale', {
 					<label><input type="checkbox" v-model="cfg.chords.showSus"/> Show sus chords</label>
 				</div>
 			</div>
-			<chords :showSus="cfg.chords.showSus" :labels="cfg.global.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
+			<chords :showSus="cfg.chords.showSus" :labels="cfg.general.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
 		</div>
 
 		<!-- Find a scale -->
