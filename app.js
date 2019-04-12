@@ -226,7 +226,7 @@ Vue.component('guitar', {
 		stringDistance: function() { return this.height / (this.tuning.length - 1); },
 		noteOffset: function() { return this.fretDistance / 4; },
 		noteRadius: function() { return Math.min(this.fretDistance, this.stringDistance) * 0.38; },
-		wrappedIdxs: function(){//.normalize this dup code
+		wrappedIdxs: function(){//.normalize 98679t08
 			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
 			var wrapIdx = 12 - this.tonic;
 			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
@@ -335,7 +335,7 @@ Vue.component('piano', {
 			}
 			return keys;
 		},
-		wrappedIntervals: function(){//.normalize this dup code
+		wrappedIntervals: function(){//.normalize 98679t08
 			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
 			var wrapIdx = 12 - this.tonic;
 			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
@@ -500,7 +500,7 @@ Vue.component('note-wheel', {
 		cx: function(){ return this.width / 2; },
 		cy: function(){ return this.height / 2; },
 		r: function(){ return Math.min(this.width, this.height) / 2 - this.buttonRadius - (this.strokeWidth/2); },
-		wrappedIntervals: function(){//.normalize this dup code
+		wrappedIntervals: function(){//.normalize 98679t08
 			var normal = [0,1,2,3,4,5,6,7,8,9,10,11];
 			var wrapIdx = 12 - this.tonic;
 			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
@@ -952,6 +952,10 @@ Vue.component('taylored-scale', {
 			return encodeURI(url);
 		},
 
+		hexNumber: function(){
+			return parseInt(this.intervals.join(''), 2).toString(16);
+		},
+
 		ianRingNumber: function(){
 			var binary = this.intervals.slice().reverse().join('');
 			return parseInt(binary, 2);
@@ -1073,6 +1077,28 @@ Vue.component('taylored-scale', {
 	template: `<div>
 		<div v-if="0"><hr><button v-on:click="test">test</button></div>
 
+		<!-- Scale name -->
+		<div>
+			<h1 style="margin-bottom:0.5em; white-space:nowrap;">{{ keyAndScale() }}</h1>
+			<p style="font-size:0.8em">
+				<button :disabled="scaleNames.length <= 1" v-on:click="cfg.misc.showAliases = !cfg.misc.showAliases">
+					other names for this scale
+				</button>
+				<div v-show="cfg.misc.showAliases" style="font-size:0.8em">
+					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
+						{{ name }}
+						<b v-if="i != scaleNames.length - 1" style="color:#ccc; white-space:normal;">&nbsp;&mdash;&nbsp; </b>
+					</span>
+				</div>
+			</p>
+			<p style="font-size:0.7em">
+				Permanent* link: <a :href="permLink">{{ permLink }}</a>
+			</p>
+			<p style="font-size:0.8em">
+				<i>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> from Ian Ring</i>
+			</p>
+		</div>
+
 		<div>
 		<div class="cfg-box">
 			<button v-on:click="cfg.global.showCfg = !cfg.global.showCfg">Global Config</button>
@@ -1106,28 +1132,6 @@ Vue.component('taylored-scale', {
 				</div>
 			</div>
 		</div>
-		</div>
-
-		<!-- Scale name -->
-		<div style="margin:1em">
-			<h2 style="margin-bottom:0.5em; white-space:nowrap;">{{ keyAndScale() }}</h2>
-			<p style="font-size:0.8em">
-				<button :disabled="scaleNames.length <= 1" v-on:click="cfg.misc.showAliases = !cfg.misc.showAliases">
-					other names for this scale
-				</button>
-				<div v-show="cfg.misc.showAliases" style="font-size:0.8em">
-					<span v-for="(name, i) in scaleNames" v-show="i > 0" style="white-space:nowrap">
-						{{ name }}
-						<b v-if="i != scaleNames.length - 1" style="color:#ccc; white-space:normal;">&nbsp;&mdash;&nbsp; </b>
-					</span>
-				</div>
-			</p>
-			<p style="font-size:0.7em">
-				Permanent* link: <a :href="permLink">{{ permLink }}</a>
-			</p>
-			<p style="font-size:0.8em">
-				<i>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> from Ian Ring</i>
-			</p>
 		</div>
 
 		<!-- Scale selector -->
@@ -1191,6 +1195,7 @@ Vue.component('taylored-scale', {
 
 		<br>
 
+		<!-- //.make these 3 things into a grid -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<div class="cfg-box">
 				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
