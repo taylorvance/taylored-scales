@@ -1235,6 +1235,16 @@ Vue.component('taylored-scale', {
 		<!-- //.make these 3 things into a grid -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
 			<div class="cfg-box">
+				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chord Viewer Config</button>
+				<div v-show="cfg.chords.showCfg" style="padding:0.5em">
+					<label><input type="checkbox" v-model="cfg.chords.showSus"/> Show sus chords</label>
+				</div>
+			</div>
+			<chords :showSus="cfg.chords.showSus" :labels="cfg.general.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
+		</div>
+
+		<div style="display:inline-block; margin:1em; vertical-align:top;">
+			<div class="cfg-box">
 				<button v-on:click="cfg.modes.showCfg = !cfg.modes.showCfg">Mode Switcher Config</button>
 				<div v-show="cfg.modes.showCfg" style="padding:0.5em">
 					Sorting:
@@ -1244,16 +1254,6 @@ Vue.component('taylored-scale', {
 				</div>
 			</div>
 			<mode-switcher :labels="cfg.general.useRoman ? romanNumerals : noteNames" :sortBy="cfg.modes.sortBy"/>
-		</div>
-
-		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<div class="cfg-box">
-				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chord Viewer Config</button>
-				<div v-show="cfg.chords.showCfg" style="padding:0.5em">
-					<label><input type="checkbox" v-model="cfg.chords.showSus"/> Show sus chords</label>
-				</div>
-			</div>
-			<chords :showSus="cfg.chords.showSus" :labels="cfg.general.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
 		</div>
 
 		<!-- Find a scale -->
