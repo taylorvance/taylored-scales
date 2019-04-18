@@ -772,11 +772,12 @@ Vue.component('taylored-scale', {
 	data: function() {
 		var cfg = {
 			general: {showCfg:false},
+			scalePicker: {showCfg:false},
 			guitar: {showCfg:false},
 			piano: {showCfg:false},
 			modes: {showCfg:false},
 			chords: {showCfg:false},
-			scales: {showCfg:false},
+			scaleFinder: {showCfg:false},
 			misc: {showAliases:false},
 		};
 		var cookieList = [];
@@ -797,9 +798,13 @@ Vue.component('taylored-scale', {
 		cookieList.push('cfg.general.customColors');
 
 		val = this.getCookie('cfg.general.useShortURL');
-		//.I kinda wanna use short by default but I'll leave it long for now just in case I change how it works.
 		cfg.general.useShortURL = (val===null ? false : (val=='true'));
 		cookieList.push('cfg.general.useShortURL');
+
+		// Scale Picker
+		val = this.getCookie('cfg.scalePicker.savedScales');
+		cfg.scalePicker.savedScales = (val===null ? [] : JSON.parse(val));
+		cookieList.push('cfg.scalePicker.savedScales');
 
 		// Guitar
 		val = this.getCookie('cfg.guitar.width');
@@ -845,10 +850,10 @@ Vue.component('taylored-scale', {
 		cfg.chords.showSus = (val===null ? false : (val=='true'));
 		cookieList.push('cfg.chords.showSus');
 
-		// Scales
-		val = this.getCookie('cfg.scales.showAlias');
-		cfg.scales.showAlias = (val===null ? false : (val=='true'));
-		cookieList.push('cfg.scales.showAlias');
+		// Scale Finder
+		val = this.getCookie('cfg.scaleFinder.showAlias');
+		cfg.scaleFinder.showAlias = (val===null ? false : (val=='true'));
+		cookieList.push('cfg.scaleFinder.showAlias');
 
 
 		return {
@@ -953,38 +958,6 @@ Vue.component('taylored-scale', {
 		noteNames: function() { return store.getters.noteNames; },
 		romanNumerals: function() { return store.getters.romanNumerals; },
 
-		permLink: function(){
-			// NOTE: every param should have corresponding decode logic in beforeMount()
-			var url = window.location.href.split('?')[0];
-			url += '?';
-
-			if(this.cfg.general.useShortURL) {
-				url += 't=' + this.tonicIdx;
-				url += '&i=' + this.hexNumber;
-			} else {
-				url += 'tonic=' + this.tonicIdx;
-				url += '&intervals=' + this.intervals.join('');
-			}
-
-			// if the tonic is shifted, add it
-			if(store.state.tonicEnharmShift > 0) {
-				url += '&ts=' + store.state.tonicEnharmShift;
-			}
-
-			// if any interval shifts are non-zero, add them
-			var is = store.state.intervalEnharmShift.join('');
-			var zeroes = Array(store.state.intervalEnharmShift.length).fill('0').join('');
-			if(is !== zeroes) {
-				if(this.cfg.general.useShortURL) {
-					url += '&is=' + parseInt(is, 2).toString(16);
-				} else {
-					url += '&is=' + is;
-				}
-			}
-
-			return encodeURI(url);
-		},
-
 		hexNumber: function(){
 			return parseInt(this.intervals.join(''), 2).toString(16);
 		},
@@ -1045,20 +1018,69 @@ Vue.component('taylored-scale', {
 	},
 
 	methods: {
+		permLink: function(useShort){
+			if(useShort === undefined) useShort = this.cfg.general.useShortURL;
+
+			// NOTE: every param should have corresponding decode logic in beforeMount()
+			var url = window.location.href.split('?')[0];
+			url += '?';
+
+			if(useShort) {
+				url += 't=' + this.tonicIdx;
+				url += '&i=' + this.hexNumber;
+			} else {
+				url += 'tonic=' + this.tonicIdx;
+				url += '&intervals=' + this.intervals.join('');
+			}
+
+			// if the tonic is shifted, add it
+			if(store.state.tonicEnharmShift > 0) {
+				url += '&ts=' + store.state.tonicEnharmShift;
+			}
+
+			// if any interval shifts are non-zero, add them
+			var is = store.state.intervalEnharmShift.join('');
+			var zeroes = Array(store.state.intervalEnharmShift.length).fill('0').join('');
+			if(is !== zeroes) {
+				if(useShort) {
+					url += '&is=' + parseInt(is, 2).toString(16);
+				} else {
+					url += '&is=' + is;
+				}
+			}
+
+			return encodeURI(url);
+		},
+
 		switchToIanRingScale(num) {
 			num = parseInt(num);
 			var intervals = num.toString(2).split('').reverse().map(function(n){ return parseInt(n); });
 			store.commit('setIntervals', intervals);
 		},
 
+		addSavedScale() {
+			var thisScale = {name:this.keyAndScale(), params:this.permLink(true).split('?')[1]};
+			var isDup = false;
+			for (var i = 0, len = this.cfg.scalePicker.savedScales.length; i < len; i++) {
+				if(thisScale.params === this.cfg.scalePicker.savedScales[i].params) {
+					isDup = true;
+					break;
+				}
+			}
+			if(!isDup) this.cfg.scalePicker.savedScales.push(thisScale);
+		},
+		shiftSavedScale(from, to) {
+			this.cfg.scalePicker.savedScales.splice(
+				to,
+				0,
+				this.cfg.scalePicker.savedScales.splice(from, 1)[0]
+			);
+		},
+		removeSavedScale(idx) { this.cfg.scalePicker.savedScales.splice(idx, 1); },
+
 		urlParams: function() { return new URLSearchParams(window.location.search); },
 
 		getParam(name) { return this.urlParams().get(name); },
-		setParam(name, value) {
-			var params = this.urlParams();
-			params.set('tonic', value);
-			window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
-		},
 
 		getCookie(key) {
 			if(typeof(Storage) !== "undefined") {
@@ -1078,11 +1100,10 @@ Vue.component('taylored-scale', {
 			}
 		},
 		resetConfig() {
-			//.add something about saved scales and colorschemes
-			var txt = "Are you sure? This will delete all of your custom settings and reload the page.";
+			var txt = "Are you sure? This will delete all of your custom settings (including custom colors and saved scales) and reload the page.";
 			if(confirm(txt)) {
 				localStorage.clear();
-				window.location.href = this.permLink;
+				window.location.href = this.permLink();
 			}
 		},
 
@@ -1129,14 +1150,13 @@ Vue.component('taylored-scale', {
 			<p style="font-size:0.7em">
 				Permanent* link
 				<button v-on:click="cfg.general.useShortURL = !cfg.general.useShortURL">{{ cfg.general.useShortURL ? 'lengthen' : 'shorten' }}</button>
-				<a :href="permLink" style="white-space:nowrap">{{ permLink }}</a>
+				<a :href="permLink()" style="white-space:nowrap">{{ permLink() }}</a>
 			</p>
 			<p style="font-size:0.8em">
 				<i>Learn more about <a :href="'https://ianring.com/musictheory/scales/' + ianRingNumber" target="_blank">scale {{ ianRingNumber }}</a> from Ian Ring</i>
 			</p>
 		</div>
 
-		<div>
 		<div class="cfg-box">
 			<button v-on:click="cfg.general.showCfg = !cfg.general.showCfg">General Config</button>
 			<div v-show="cfg.general.showCfg" style="padding:0.5em">
@@ -1169,10 +1189,26 @@ Vue.component('taylored-scale', {
 				</div>
 			</div>
 		</div>
-		</div>
+		<br>
 
-		<!-- Scale selector -->
+		<!-- Scale picker -->
 		<div style="display:inline-block; margin:1em;">
+			<div class="cfg-box">
+				<button v-on:click="cfg.scalePicker.showCfg = !cfg.scalePicker.showCfg">Scale Picker Config</button>
+				<div v-show="cfg.scalePicker.showCfg" style="padding:0.5em">
+					<button v-on:click="addSavedScale()">Save current scale</button>
+					<br>Saved scales:
+					<table style="font-size:0.8em; padding-left:1em;">
+						<tr v-for="(row, i) in cfg.scalePicker.savedScales">
+							<td><button v-on:click="shiftSavedScale(i, i-1)" :disabled="i === 0" style="padding:0">&uarr;</button></td>
+							<td><button v-on:click="shiftSavedScale(i, i+1)" :disabled="i === cfg.scalePicker.savedScales.length-1" style="padding:0">&darr;</button></td>
+							<td><a :href="'/?'+row.params">{{ row.name }}</a></td>
+							<td><button v-on:click="removeSavedScale(i)" style="padding:0">x</button></td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<br>
 			<scale-builder :width="height" :colors="colors"/>
 			<br><br>
 			<note-wheel :size="height" :colors="colors"/>
@@ -1258,19 +1294,18 @@ Vue.component('taylored-scale', {
 
 		<!-- Find a scale -->
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
-			<div>
 			<div class="cfg-box">
-				<button v-on:click="cfg.scales.showCfg = !cfg.scales.showCfg">Scale Finder Config</button>
-				<div v-show="cfg.scales.showCfg" style="padding:0.5em">
-					<label><input type="checkbox" v-model="cfg.scales.showAlias"/> Show alias</label>
+				<button v-on:click="cfg.scaleFinder.showCfg = !cfg.scaleFinder.showCfg">Scale Finder Config</button>
+				<div v-show="cfg.scaleFinder.showCfg" style="padding:0.5em">
+					<label><input type="checkbox" v-model="cfg.scaleFinder.showAlias"/> Show alias</label>
 				</div>
 			</div>
-			</div>
+			<br>
 			<input type="search" v-model="scaleSearch" placeholder="Scale name"/>
 			<div style="border:1px solid black; font-size:0.75em; height:200px; overflow:scroll; font-family:'Lucida Console', Monaco, monospace;">
 				<div v-for="scale in filteredIanRingScales" v-on:click="switchToIanRingScale(scale.num)">
 					<span style="white-space:nowrap">{{ scale.name }}</span>
-					<i v-show="cfg.scales.showAlias && scale.alias" style="color:#aaa; display:inline-block; margin-left:0.5em; white-space:nowrap;">
+					<i v-show="cfg.scaleFinder.showAlias && scale.alias" style="color:#aaa; display:inline-block; margin-left:0.5em; white-space:nowrap;">
 						(aka {{ scale.alias }})
 					</i>
 				</div>
