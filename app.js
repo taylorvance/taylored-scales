@@ -808,7 +808,7 @@ Vue.component('taylored-scale', {
 
 		// Guitar
 		val = this.getCookie('cfg.guitar.width');
-		cfg.guitar.width = (val===null ? window.innerWidth*0.96 : parseInt(val));
+		cfg.guitar.width = (val===null ? Math.floor(window.innerWidth*0.96) : parseInt(val));
 		cookieList.push('cfg.guitar.width');
 
 		val = this.getCookie('cfg.guitar.height');
@@ -825,7 +825,7 @@ Vue.component('taylored-scale', {
 
 		// Piano
 		val = this.getCookie('cfg.piano.width');
-		cfg.piano.width = (val===null ? Math.max(300,window.innerWidth*0.5) : parseInt(val));
+		cfg.piano.width = (val===null ? Math.floor(Math.max(300,window.innerWidth*0.5)) : parseInt(val));
 		cookieList.push('cfg.piano.width');
 
 		val = this.getCookie('cfg.piano.height');
@@ -1160,13 +1160,10 @@ Vue.component('taylored-scale', {
 		<div class="cfg-box">
 			<button v-on:click="cfg.general.showCfg = !cfg.general.showCfg">General Config</button>
 			<div v-show="cfg.general.showCfg" style="padding:0.5em">
-				<button v-on:click="resetConfig()" style="border-color:red; padding:0.3em;"><b>RESET ALL SETTINGS</b></button>
-				<br><br>
 				<label><input type="checkbox" v-model="cfg.general.useRoman"/> Use Roman Numerals</label>
 				<br>
 				Colorscheme:
 				<div style="padding-left:1em">
-					<br>
 					<div style="display:inline-block">
 						<div
 							v-for="(colors, key) in colorschemes"
@@ -1187,6 +1184,8 @@ Vue.component('taylored-scale', {
 						</span>
 					</div>
 				</div>
+				<br>
+				<button v-on:click="resetConfig()" style="border-color:red; padding:0.5em;"><b>RESET ALL SETTINGS</b></button>
 			</div>
 		</div>
 		<br>
