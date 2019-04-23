@@ -167,7 +167,7 @@ var audioMixin = {
 		/**
 		 * @param {int} halfsteps - The number of halfsteps from the tonic.
 		 * @param {number} [duration=500] - The number of ms to hold the note.
-		 * @param {number} [start=0] - The number of ms from now to start the note.
+		 * @param {number} [start=0] - The number of ms from now to start playing the note.
 		 * @param {float} [gain=1.0] - The gain value, from 0 to 1.
 		 */
 		playNote: function(halfsteps, duration, start, gain) {
@@ -190,11 +190,6 @@ var audioMixin = {
 			}
 			//console.log("playing "+Math.round(start*100)/100+"-"+Math.round(stop*100)/100, "interval "+halfsteps+" = "+hz+"hz", "vol="+gain);
 
-			// set up oscillator
-			var osc = ctx.createOscillator();
-			osc.type = osc.SINE;
-			osc.frequency.value = hz;
-
 			// set up gain transition
 			var vol = ctx.createGain();
 			vol.gain.value = 0;
@@ -202,9 +197,12 @@ var audioMixin = {
 			var decay = 0.2;
 			vol.gain.setTargetAtTime(gain, start, attack);
 			vol.gain.setTargetAtTime(0, stop - decay, decay);
-
-			// queue sound
 			vol.connect(ctx.destination);
+
+			// set up and queue oscillator
+			var osc = ctx.createOscillator();
+			osc.type = osc.SINE;
+			osc.frequency.value = hz;
 			osc.connect(vol);
 			osc.start(start);
 			osc.stop(stop);
