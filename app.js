@@ -138,6 +138,103 @@ const store = new Vuex.Store({
 
 
 
+var audioMixin = {
+	data: function() {
+		return {
+			audioCtx: new (window.AudioContext || window.webkitAudioContext)(),
+		};
+	},
+	computed: {
+		hz: function() {
+			const A_Hz = 440;
+			var hzs = [];
+			var base = Math.pow(2, 1/12);
+			for (var i = 0; i < 24; i++) {
+				var halfsteps = i - 9; // distance from A
+				var hz = A_Hz * Math.pow(base, halfsteps);
+				//hz /= 2; // start an octave below mid C
+				hzs.push(hz);
+			}
+			return hzs;
+		},
+		wrappedHalfsteps: function(){
+			var normal = [];
+			var wrapIdx = 12 - store.state.tonicIdx;
+			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
+		},
+	},
+	methods: {
+		/**
+		 * @param {int} halfsteps - The number of halfsteps from the tonic.
+		 * @param {number} [duration=500] - The number of ms to hold the note.
+		 * @param {number} [start=0] - The number of ms from now to start the note.
+		 * @param {float} [gain=1.0] - The gain value, from 0 to 1.
+		 */
+		playNote: function(halfsteps, duration, start, gain) {
+			if(halfsteps === undefined) {
+				console.log("playNote error: halfsteps not provided", halfsteps);
+				return;
+			}
+			var ctx = this.audioCtx;
+			duration = duration || 500;
+			start = ((start || 0) / 1000) + ctx.currentTime;
+			stop = start + (duration / 1000);
+			gain = Math.min(gain || 1, 1);
+			gain *= 0.9; // give some buffer before clipping
+
+			var hzIdx = store.state.tonicIdx + halfsteps;
+			var hz = this.hz[hzIdx];
+			if(hz === undefined) {
+				console.log("playNote error: hz index " + hzIdx + " not defined");
+				return;
+			}
+			//console.log("playing "+Math.round(start*100)/100+"-"+Math.round(stop*100)/100, "interval "+halfsteps+" = "+hz+"hz", "vol="+gain);
+
+			// set up oscillator
+			var osc = ctx.createOscillator();
+			osc.type = osc.SINE;
+			osc.frequency.value = hz;
+
+			// set up gain transition
+			var vol = ctx.createGain();
+			vol.gain.value = 0;
+			var attack = 0.02;
+			var decay = 0.2;
+			vol.gain.setTargetAtTime(gain, start, attack);
+			vol.gain.setTargetAtTime(0, stop - decay, decay);
+
+			// queue sound
+			vol.connect(ctx.destination);
+			osc.connect(vol);
+			osc.start(start);
+			osc.stop(stop);
+		},
+		playChord: function(idxs, duration) {
+			for (let i = 0, len = idxs.length; i < len; i++) {
+				this.playNote(idxs[i], duration, 0, 1/len);
+			}
+		},
+		playScale: function(idxs, noteDuration) {
+			var start = 0;
+			// ascend
+			for (let i = 0, len = idxs.length; i < len; i++) {
+				this.playNote(idxs[i], noteDuration, start);
+				start += noteDuration;
+			}
+			// octave
+			this.playNote(12, noteDuration, start);
+			start += noteDuration;
+			// descend
+			for (let i = idxs.length - 1; i >= 0; i--) {
+				this.playNote(idxs[i], noteDuration, start);
+				start += noteDuration;
+			}
+		},
+	}
+};
+
+
+
 Vue.component('fret', {
 	props: ['x1', 'y1', 'x2', 'y2', 'num'], //.prob just need one x,y and one length var
 	template: `<g class="fret">
@@ -242,7 +339,7 @@ Vue.component('guitar', {
 		test() {
 			for (var i = 0; i < this.tuning.length; i++) {
 				for (var j = 0; j < this.fretAry.length; j++) {
-					console.log('str'+i+',fret'+this.fretAry[j], this.tuning[i], this.intervals[this.wrappedIdxs[(this.tuning[i] + this.fretAry[j]) % 12]]);
+					//console.log('str'+i+',fret'+this.fretAry[j], this.tuning[i], this.intervals[this.wrappedIdxs[(this.tuning[i] + this.fretAry[j]) % 12]]);
 				}
 			}
 		},
@@ -287,6 +384,8 @@ Vue.component('guitar', {
 
 
 Vue.component('piano', {
+	mixins: [audioMixin],
+
 	data: function() {
 		return {
 			strokeWidth: 2,
@@ -374,7 +473,7 @@ Vue.component('piano', {
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
 		<!-- White keys -->
-		<g v-for="(interval, i) in whiteKeys" :key="interval.id">
+		<g v-for="(interval, i) in whiteKeys" :key="interval.id" v-on:click="playNote(interval, 400, 0, 0.8)">
 			<rect
 				:x="whiteX(i)"
 				:y="strokeWidth"
@@ -395,7 +494,7 @@ Vue.component('piano', {
 		</g>
 
 		<!-- Black keys -->
-		<g v-for="(interval, i) in blackKeys" :key="interval.id">
+		<g v-for="(interval, i) in blackKeys" :key="interval.id" v-on:click="playNote(interval, 400, 0, 0.8)">
 			<rect
 				:x="blackX(i)"
 				:y="strokeWidth"
@@ -419,6 +518,8 @@ Vue.component('piano', {
 
 
 Vue.component('scale-builder', {
+	mixins: [audioMixin],
+
 	props: {
 		width: {type: Number, required: true},
 		colors: Array,
@@ -426,6 +527,13 @@ Vue.component('scale-builder', {
 
 	computed: {
 		intervalSet: function() { return store.state.intervalSet; },
+		intervalIdxs: function() {
+			var idxs = [];
+			for (var i = 0, len = store.getters.booleanIntervals.length; i < len; i++) {
+				if(store.getters.booleanIntervals[i]) idxs.push(i);
+			}
+			return idxs;
+		},
 		labels: function() { return store.getters.intervalNames; },
 		buttonRadius: function(){ return this.width / 16; },
 		height: function(){ return this.buttonRadius * 7.5; },
@@ -455,29 +563,32 @@ Vue.component('scale-builder', {
 		enharmonicizeInterval(i) { store.commit('enharmonicizeInterval', i); },
 	},
 
-	template: `<svg :width="width" :height="height">
-		<g v-for="(interval, i) in intervalSet" :key="interval.id">
-			<note-dot
-				@click.native="i>0 && toggleInterval(i)"
-				:x="intervalX(i)"
-				:y="height/2 + intervalYoffset(i)"
-				:r="buttonRadius"
-				:label="labels[i]"
-				:color="fill(i)"
-				:opacity="interval.on ? 1 : 0.25"
-				:style="i>0 ? 'cursor:pointer' : ''"
-			/>
-			<text
-				v-if="interval.enharmonics.length > 1"
-				v-on:click="enharmonicizeInterval(i)"
-				:x="intervalX(i)"
-				:y="height/2 + intervalYoffset(i) * 3"
-				:fill="fill(i)"
-				:opacity="interval.on ? 1 : 0.25"
-				style="dominant-baseline:middle; font-weight:bold; cursor:pointer;"
-			>↻</text>
-		</g>
-	</svg>`
+	template: `<div>
+		<svg :width="width" :height="height">
+			<g v-for="(interval, i) in intervalSet" :key="interval.id">
+				<note-dot
+					@click.native="i>0 && toggleInterval(i)"
+					:x="intervalX(i)"
+					:y="height/2 + intervalYoffset(i)"
+					:r="buttonRadius"
+					:label="labels[i]"
+					:color="fill(i)"
+					:opacity="interval.on ? 1 : 0.25"
+					:style="i>0 ? 'cursor:pointer' : ''"
+				/>
+				<text
+					v-if="interval.enharmonics.length > 1"
+					v-on:click="enharmonicizeInterval(i)"
+					:x="intervalX(i)"
+					:y="height/2 + intervalYoffset(i) * 3"
+					:fill="fill(i)"
+					:opacity="interval.on ? 1 : 0.25"
+					style="dominant-baseline:middle; font-weight:bold; cursor:pointer;"
+				>↻</text>
+			</g>
+		</svg>
+		<div><button v-on:click="playScale(intervalIdxs, 300)">play scale</button></div>
+	</div>`
 });
 
 Vue.component('note-wheel', {
@@ -670,6 +781,8 @@ Vue.component('mode-switcher', {
 
 
 Vue.component('chords', {
+	mixins: [audioMixin],
+
 	props: {
 		labels: Array,
 		showSus: {type: Boolean, default: false},
@@ -717,7 +830,10 @@ Vue.component('chords', {
 					}
 					if(isAvailable) {
 						if(grps["Triads"][rootIdx] == undefined) grps["Triads"][rootIdx] = [];
-						grps["Triads"][rootIdx].push(this.labels[this.wrappedIntervals[rootIdx]] + suffix);
+						grps["Triads"][rootIdx].push({
+							label: this.labels[this.wrappedIntervals[rootIdx]] + suffix,
+							intervals: combos[suffix],
+						});
 					}
 				}
 			}
@@ -748,7 +864,10 @@ Vue.component('chords', {
 					}
 					if(isAvailable) {
 						if(grps["Sevenths"][rootIdx] == undefined) grps["Sevenths"][rootIdx] = [];
-						grps["Sevenths"][rootIdx].push(this.labels[this.wrappedIntervals[rootIdx]] + suffix);
+						grps["Sevenths"][rootIdx].push({
+							label: this.labels[this.wrappedIntervals[rootIdx]] + suffix,
+							intervals: combos[suffix],
+						});
 					}
 				}
 			}
@@ -761,7 +880,11 @@ Vue.component('chords', {
 		<div v-for="(sets, type) in chordGroups" style="display:inline-block; margin-left:1em; vertical-align:top;">
 			<b>{{ type }}</b>
 			<div v-for="(chords, rootIdx) in chordGroups[type]">
-				<span v-for="chord in chords" style="margin-right:1.5em">{{ chord }}</span>
+				<button
+					v-for="chord in chords"
+					v-on:click="playChord(chord.intervals.map(function(num){ return parseInt(num) + parseInt(rootIdx); }), 1000)"
+					style="margin-right:1.5em; padding:0; width:5.5em;"
+				>{{ chord.label }}</button>
 			</div>
 		</div>
 	</div>`
