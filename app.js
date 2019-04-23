@@ -140,8 +140,10 @@ const store = new Vuex.Store({
 
 var audioMixin = {
 	data: function() {
+		var ctx = new (window.AudioContext || window.webkitAudioContext)();
 		return {
-			audioCtx: new (window.AudioContext || window.webkitAudioContext)(),
+			audioCtx: ctx,
+			hasAudio: false && ctx && ctx.state !== 'suspended',
 		};
 	},
 	computed: {
@@ -171,6 +173,7 @@ var audioMixin = {
 		 * @param {float} [gain=1.0] - The gain value, from 0 to 1.
 		 */
 		playNote: function(halfsteps, duration, start, gain) {
+			if(!this.hasAudio) return false;
 			if(halfsteps === undefined) {
 				console.log("playNote error: halfsteps not provided", halfsteps);
 				return;
@@ -585,7 +588,7 @@ Vue.component('scale-builder', {
 				>↻</text>
 			</g>
 		</svg>
-		<div><button v-on:click="playScale(intervalIdxs, 300)">play scale</button></div>
+		<div><button v-show="hasAudio" v-on:click="playScale(intervalIdxs, 300)">play scale</button></div>
 	</div>`
 });
 
@@ -879,10 +882,17 @@ Vue.component('chords', {
 			<b>{{ type }}</b>
 			<div v-for="(chords, rootIdx) in chordGroups[type]">
 				<button
+					v-show="hasAudio"
 					v-for="chord in chords"
 					v-on:click="playChord(chord.intervals.map(function(num){ return parseInt(num) + parseInt(rootIdx); }), 1000)"
 					style="margin-right:1.5em; padding:0; width:5.5em;"
 				>{{ chord.label }}</button>
+				<span
+					v-hide="hasAudio"
+					v-for="chord in chords"
+					v-on:click="playChord(chord.intervals.map(function(num){ return parseInt(num) + parseInt(rootIdx); }), 1000)"
+					style="margin-right:1.5em; padding:0; width:5.5em;"
+				>{{ chord.label }}</span>
 			</div>
 		</div>
 	</div>`
