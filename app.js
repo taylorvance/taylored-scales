@@ -138,12 +138,16 @@ const store = new Vuex.Store({
 
 
 
+// Create one audio context for all components to use.
+var AudioContext = window.AudioContext || window.webkitAudioContext;
+var audioCtx = (AudioContext ? new AudioContext() : false);
+
 var audioMixin = {
 	data: function() {
-		var ctx = new (window.AudioContext || window.webkitAudioContext)();
 		return {
-			audioCtx: ctx,
-			hasAudio: false && ctx && ctx.state !== 'suspended',
+			hasAudio: Boolean(audioCtx),
+			attack: 0.01,
+			decay: 0.1,
 		};
 	},
 	computed: {
@@ -178,7 +182,7 @@ var audioMixin = {
 				console.log("playNote error: halfsteps not provided", halfsteps);
 				return;
 			}
-			var ctx = this.audioCtx;
+			var ctx = audioCtx;
 			duration = duration || 500;
 			start = ((start || 0) / 1000) + ctx.currentTime;
 			stop = start + (duration / 1000);
@@ -196,10 +200,8 @@ var audioMixin = {
 			// set up gain transition
 			var vol = ctx.createGain();
 			vol.gain.value = 0;
-			var attack = 0.02;
-			var decay = 0.2;
-			vol.gain.setTargetAtTime(gain, start, attack);
-			vol.gain.setTargetAtTime(0, stop - decay, decay);
+			vol.gain.setTargetAtTime(gain, start, this.attack);
+			vol.gain.setTargetAtTime(0, stop - this.decay, this.decay);
 			vol.connect(ctx.destination);
 
 			// set up and queue oscillator
@@ -231,7 +233,7 @@ var audioMixin = {
 				start += noteDuration;
 			}
 		},
-	}
+	},
 };
 
 
@@ -474,7 +476,7 @@ Vue.component('piano', {
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
 		<!-- White keys -->
-		<g v-for="(interval, i) in whiteKeys" :key="interval.id" v-on:click="playNote(interval, 400, 0, 0.8)">
+		<g v-for="(interval, i) in whiteKeys" :key="interval.id" v-on:click="hasAudio && playNote(interval, 400, 0, 0.8)">
 			<rect
 				:x="whiteX(i)"
 				:y="strokeWidth"
@@ -495,7 +497,7 @@ Vue.component('piano', {
 		</g>
 
 		<!-- Black keys -->
-		<g v-for="(interval, i) in blackKeys" :key="interval.id" v-on:click="playNote(interval, 400, 0, 0.8)">
+		<g v-for="(interval, i) in blackKeys" :key="interval.id" v-on:click="hasAudio && playNote(interval, 400, 0, 0.8)">
 			<rect
 				:x="blackX(i)"
 				:y="strokeWidth"
@@ -888,7 +890,7 @@ Vue.component('chords', {
 					style="margin-right:1.5em; padding:0; width:5.5em;"
 				>{{ chord.label }}</button>
 				<span
-					v-hide="hasAudio"
+					v-show="!hasAudio"
 					v-for="chord in chords"
 					v-on:click="playChord(chord.intervals.map(function(num){ return parseInt(num) + parseInt(rootIdx); }), 1000)"
 					style="margin-right:1.5em; padding:0; width:5.5em;"
@@ -1340,7 +1342,6 @@ Vue.component('taylored-scale', {
 			</div>
 			<br>
 			<scale-builder :width="height" :colors="colors"/>
-			<br><br>
 			<note-wheel :size="height" :colors="colors"/>
 		</div>
 
