@@ -142,6 +142,37 @@ const store = new Vuex.Store({
 var AudioContext = window.AudioContext || window.webkitAudioContext;
 var audioCtx = (AudioContext ? new AudioContext() : false);
 
+// Calculate basic frequencies for octave 4.
+const A4 = 440;
+var base = Math.pow(2, 1/12);
+var octave4 = [];
+for (var i = 0; i < 12; i++) {
+	var halfsteps = i - 9; // distance from A4
+	var hz = A4 * Math.pow(base, halfsteps);
+	octave4.push(hz);
+}
+
+// Populate notes C0 - B7
+var allHz = [];
+for (var i = -4; i < 4; i++) {
+	for (var j = 0; j < 12; j++) {
+		var hz = octave4[j] * Math.pow(2, i);
+		allHz.push(hz);
+		/*
+		for (var k = 0, len = store.state.tonicOptions[j].length; k < len; k++) {
+			var letter = store.state.tonicOptions[j][k][0];
+			var key = letter;
+			if(store.state.tonicOptions[j][k].length > 1) {
+				key += store.state.tonicOptions[j][k][1];
+			}
+			key += (4 + i);
+			HzMap[key] = hz;
+		}
+		*/
+	}
+}
+var A4idx = allHz.indexOf(A4);
+
 var audioMixin = {
 	data: function() {
 		return {
@@ -149,25 +180,6 @@ var audioMixin = {
 			attack: 0.01,
 			decay: 0.1,
 		};
-	},
-	computed: {
-		hz: function() {
-			const A_Hz = 440;
-			var hzs = [];
-			var base = Math.pow(2, 1/12);
-			for (var i = 0; i < 24; i++) {
-				var halfsteps = i - 9; // distance from A
-				var hz = A_Hz * Math.pow(base, halfsteps);
-				//hz /= 2; // start an octave below mid C
-				hzs.push(hz);
-			}
-			return hzs;
-		},
-		wrappedHalfsteps: function(){
-			var normal = [];
-			var wrapIdx = 12 - store.state.tonicIdx;
-			return normal.slice(wrapIdx).concat(normal.slice(0, wrapIdx));
-		},
 	},
 	methods: {
 		/**
@@ -189,8 +201,9 @@ var audioMixin = {
 			gain = Math.min(gain || 1, 1);
 			gain *= 0.9; // give some buffer before clipping
 
-			var hzIdx = store.state.tonicIdx + halfsteps;
-			var hz = this.hz[hzIdx];
+			// middle C + tonic + halfsteps
+			var hzIdx = (A4idx - 9) + store.state.tonicIdx + halfsteps;
+			var hz = allHz[hzIdx];
 			if(hz === undefined) {
 				console.log("playNote error: hz index " + hzIdx + " not defined");
 				return;
@@ -212,24 +225,17 @@ var audioMixin = {
 			osc.start(start);
 			osc.stop(stop);
 		},
-		playChord: function(idxs, duration) {
-			for (let i = 0, len = idxs.length; i < len; i++) {
-				this.playNote(idxs[i], duration, 0, 1/len);
+		playChord: function(halfsteps, duration) {
+			for (let i = 0, len = halfsteps.length; i < len; i++) {
+				this.playNote(halfsteps[i], duration, 0, 1/len);
 			}
 		},
-		playScale: function(idxs, noteDuration) {
+		playScale: function(halfsteps, noteDuration) {
+			// ascend, play octave, and descend
+			halfsteps = halfsteps.concat([12]).concat(halfsteps.slice().reverse());
 			var start = 0;
-			// ascend
-			for (let i = 0, len = idxs.length; i < len; i++) {
-				this.playNote(idxs[i], noteDuration, start);
-				start += noteDuration;
-			}
-			// octave
-			this.playNote(12, noteDuration, start);
-			start += noteDuration;
-			// descend
-			for (let i = idxs.length - 1; i >= 0; i--) {
-				this.playNote(idxs[i], noteDuration, start);
+			for (let i = 0, len = halfsteps.length; i < len; i++) {
+				this.playNote(halfsteps[i], noteDuration, start);
 				start += noteDuration;
 			}
 		},
@@ -789,6 +795,7 @@ Vue.component('chords', {
 	props: {
 		labels: Array,
 		showSus: {type: Boolean, default: false},
+		denseVoicings: {type: Boolean, default: true},
 	},
 
 	computed: {
@@ -835,7 +842,11 @@ Vue.component('chords', {
 						if(grps["Triads"][rootIdx] == undefined) grps["Triads"][rootIdx] = [];
 						grps["Triads"][rootIdx].push({
 							label: this.labels[this.wrappedIntervals[rootIdx]] + suffix,
-							intervals: combos[suffix],
+							intervals: combos[suffix].map(function(hs){
+								if(!this.denseVoicings) return hs;
+								while (rootIdx + hs >= 6) hs -= 12;
+								return hs;
+							}.bind(this)),
 						});
 					}
 				}
@@ -869,7 +880,11 @@ Vue.component('chords', {
 						if(grps["Sevenths"][rootIdx] == undefined) grps["Sevenths"][rootIdx] = [];
 						grps["Sevenths"][rootIdx].push({
 							label: this.labels[this.wrappedIntervals[rootIdx]] + suffix,
-							intervals: combos[suffix],
+							intervals: combos[suffix].map(function(hs){
+								if(!this.denseVoicings) return hs;
+								while (rootIdx + hs >= 6) hs -= 12;
+								return hs;
+							}.bind(this)),
 						});
 					}
 				}
@@ -892,7 +907,6 @@ Vue.component('chords', {
 				<span
 					v-show="!hasAudio"
 					v-for="chord in chords"
-					v-on:click="playChord(chord.intervals.map(function(num){ return parseInt(num) + parseInt(rootIdx); }), 1000)"
 					style="margin-right:1.5em; padding:0; width:5.5em;"
 				>{{ chord.label }}</span>
 			</div>
@@ -982,6 +996,10 @@ Vue.component('taylored-scale', {
 		val = this.getCookie('cfg.chords.showSus');
 		cfg.chords.showSus = (val===null ? false : (val=='true'));
 		cookieList.push('cfg.chords.showSus');
+
+		val = this.getCookie('cfg.chords.denseVoicings');
+		cfg.chords.denseVoicings = (val===null ? false : (val=='true'));
+		cookieList.push('cfg.chords.denseVoicings');
 
 		// Scale Finder
 		val = this.getCookie('cfg.scaleFinder.showAlias');
@@ -1405,9 +1423,15 @@ Vue.component('taylored-scale', {
 				<button v-on:click="cfg.chords.showCfg = !cfg.chords.showCfg">Chord Viewer Config</button>
 				<div v-show="cfg.chords.showCfg" style="padding:0.5em">
 					<label><input type="checkbox" v-model="cfg.chords.showSus"/> Show sus chords</label>
+					<br><label><input type="checkbox" v-model="cfg.chords.denseVoicings"/> Use dense voicings (audio)</label>
 				</div>
 			</div>
-			<chords :showSus="cfg.chords.showSus" :labels="cfg.general.useRoman ? romanNumerals : noteNames" style='font-family: "Times New Roman", Times, serif'/>
+			<chords
+				:labels="cfg.general.useRoman ? romanNumerals : noteNames"
+				:showSus="cfg.chords.showSus"
+				:denseVoicings="cfg.chords.denseVoicings"
+				style='font-family: "Times New Roman", Times, serif'
+			/>
 		</div>
 
 		<div style="display:inline-block; margin:1em; vertical-align:top;">
