@@ -482,7 +482,11 @@ Vue.component('piano', {
 
 	template: `<svg :width="svgWidth" :height="svgHeight">
 		<!-- White keys -->
-		<g v-for="(interval, i) in whiteKeys" :key="interval.id" v-on:click="hasAudio && playNote(interval, 400, 0, 0.8)">
+		<g
+			v-for="(interval, i) in whiteKeys"
+			:key="interval.id"
+			v-on:click="intervals[wrappedIntervals[interval]] && playNote(interval - tonic - 12 + 12 * Math.floor(octaves * i / whiteKeys.length), 400, 0, 0.1)"
+		>
 			<rect
 				:x="whiteX(i)"
 				:y="strokeWidth"
@@ -503,7 +507,11 @@ Vue.component('piano', {
 		</g>
 
 		<!-- Black keys -->
-		<g v-for="(interval, i) in blackKeys" :key="interval.id" v-on:click="hasAudio && playNote(interval, 400, 0, 0.8)">
+		<g
+			v-for="(interval, i) in blackKeys"
+			:key="interval.id"
+			v-on:click="intervals[wrappedIntervals[interval]] && playNote(interval - tonic - 12 + 12 * Math.floor(octaves * i / blackKeys.length), 400, 0, 0.1)"
+		>
 			<rect
 				:x="blackX(i)"
 				:y="strokeWidth"
