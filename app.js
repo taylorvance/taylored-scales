@@ -621,7 +621,7 @@ Vue.component('note-wheel', {
 	},
 
 	computed: {
-		labels: function(){ return store.getters.tonicOptions; },
+		labels: function(){ return store.getters.noteNames; },
 		tonic: function(){ return store.state.tonicIdx; },
 		intervals: function() { return store.getters.booleanIntervals; },
 		width: function(){ return this.size; },
