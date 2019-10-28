@@ -416,7 +416,7 @@ Vue.component('piano', {
 		width: function() { return this.svgWidth - this.strokeWidth * 2; },
 		height: function() { return this.svgHeight - this.strokeWidth * 2; },
 		whiteWidth: function() { return this.width / this.whiteKeys.length; },
-		blackWidth: function() { return this.whiteWidth * 0.7; },
+		blackWidth: function() { return this.whiteWidth * 0.65; },
 		blackHeight: function() { return this.height * 0.6; },
 		whiteKeys: function() {
 			var whites = [];
@@ -459,15 +459,15 @@ Vue.component('piano', {
 			var placeIn5 = i % 5;
 			var x = octave * this.whiteWidth * 7 + this.strokeWidth;
 			if(placeIn5 == 0) {
-				x += this.whiteWidth * 1 - this.blackWidth / 2 - this.blackWidth * 0.2;
+				x += this.whiteWidth * 1 - this.blackWidth / 2 - this.blackWidth * 0.1;
 			} else if(placeIn5 == 1) {
-				x += this.whiteWidth * 2 - this.blackWidth / 2 + this.blackWidth * 0.2;
+				x += this.whiteWidth * 2 - this.blackWidth / 2 + this.blackWidth * 0.1;
 			} else if(placeIn5 == 2) {
-				x += this.whiteWidth * 4 - this.blackWidth / 2 - this.blackWidth * 0.3;
+				x += this.whiteWidth * 4 - this.blackWidth / 2 - this.blackWidth * 0.2;
 			} else if(placeIn5 == 3) {
 				x += this.whiteWidth * 5 - this.blackWidth / 2;
 			} else if(placeIn5 == 4) {
-				x += this.whiteWidth * 6 - this.blackWidth / 2 + this.blackWidth * 0.3;
+				x += this.whiteWidth * 6 - this.blackWidth / 2 + this.blackWidth * 0.2;
 			}
 			return x;
 		},
@@ -1036,10 +1036,15 @@ Vue.component('taylored-scale', {
 					'#ff0000', '#ff6600', '#ff9904', '#ffcc02', '#f6f600', '#66cc02',
 					'#049901', '#0db4c2', '#0151d4', '#660099', '#990099', '#cc0099'
 				],
-				tonicSeventh: [
+				quality: [
+					'#f00', '#408', '#27f', '#508', '#27f', '#0d0',
+					'#0ff', '#0d0', '#508', '#27f', '#508', '#27f'
+				],
+				seventh: [
 					'#e00', '#ace', '#ace', '#22b', '#24f', '#ace',
 					'#ace', '#0c0', '#ace', '#ace', '#d90', '#ec0'
 				],
+				//.more ideas: https://roelhollander.eu/en/tuning-frequency/sound-light-colour/
 				/*
 				darkAccident: [
 					'hsl(0,100%,50%)', 'hsl(15,100%,40%)', 'hsl(30,100%,50%)', 'hsl(45,100%,40%)', 'hsl(60,92%,50%)', 'hsl(90,100%,45%)',
